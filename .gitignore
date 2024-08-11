@@ -1,0 +1,13 @@
+!.gitignore
+!*.md
+
+!*.sh
+!*.py
+!*.smk
+!*.yaml
+
+!setup.py
+!MANIFEST.in
+*.egg-info
+
+__pychache__
