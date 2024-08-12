@@ -2,7 +2,7 @@
 """
  * @Date: 2022-10-13 09:49:04
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 12:27:45
+ * @LastEditTime: 2024-08-12 13:12:52
  * @FilePath: /pymummer/tests/setup.py
  * @Description:
 """
@@ -31,8 +31,8 @@ def get_version(file: str | Path):
                 break
         for line in f:
             if line.strip():
+                v = line.strip().rsplit(maxsplit=1)
                 break
-            v = line.strip().rsplit(maxsplit=1)
         else:
             v = ["", "0+unknown"]
         version = v[1].rstrip(":")

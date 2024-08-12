@@ -42,7 +42,7 @@ class Pair(Generic[FT]):
             self._f = f
         self.cls = cls
 
-    def __call__(self, cls: CLS):
+    def __call__(self, cls):
         self.cls = cls
         return self
 
@@ -100,6 +100,7 @@ try:
         ([1, -3, 4], 3)
         """
         seq1, seq2 = str(seq1), str(seq2)
+        assert edlib is not None
         ealign = edlib.align(seq1, seq2, mode="NW", task="path")
         # print(ealign)
         ndiff = int(ealign["editDistance"])

@@ -2,8 +2,8 @@
 """
  * @Date: 2024-04-22 11:27:00
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-04-22 23:08:20
- * @FilePath: /genome/tests/genome/_version.py
+ * @LastEditTime: 2024-08-12 12:57:33
+ * @FilePath: /pymummer/tests/_version.py
  * @Description: Git implementation of _version.py.
 
  This file helps to compute a version number in source trees obtained from
@@ -116,7 +116,7 @@ def run_command(commands, args, cwd=None, verbose=False, hide_stderr=False, env=
         if verbose:
             print(f"unable to find command, tried {commands}")
         return "", None
-    stdout = f"{process.communicate()[0].strip().decode()}"
+    stdout = str(process.communicate()[0].strip())
     if process.returncode != 0:
         if verbose:
             print(f"unable to run {dispcmd} (error)")

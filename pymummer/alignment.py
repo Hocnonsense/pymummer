@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 11:17:10
+ * @LastEditTime: 2024-08-12 13:33:30
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -55,7 +55,7 @@ class AlignContig2:
     @overload
     def align(
         self,
-        strand: tuple[Literal[1, -1], Literal[1, -1]] = (1, 1),
+        strand: tuple[Literal[1, -1], Literal[1, -1]],
         /,
         align_method: Literal["edlib"] = "edlib",
     ) -> "AlignRegion": ...
@@ -66,7 +66,16 @@ class AlignContig2:
         /,
         align_method: Literal["edlib"] = "edlib",
     ) -> "AlignRegion": ...
-    def align(self, locs=1, /, align_method="edlib"):
+    def align(
+        self,
+        locs: (
+            Literal[1, -1]
+            | tuple[Literal[1, -1], Literal[1, -1]]
+            | tuple[SimpleLocation, SimpleLocation]
+        ) = 1,
+        /,
+        align_method="edlib",
+    ):
         # check locs
         if isinstance(locs, int):
             loc_ref = SimpleLocation(0, len(self.seq2["ref"]), 1)
@@ -115,8 +124,8 @@ class AlignRegion:
         self.contig = contig2
         ref_loc, query_loc = locs
         self.loc2 = Pair({"ref": ref_loc, "query": query_loc})
-        refid = self.contig.seqid2["ref"] if self.contig else None
-        queryid = self.contig.seqid2["query"] if self.contig else None
+        refid = self.contig.seqid2["ref"] if self.contig else "<unknown id>"
+        queryid = self.contig.seqid2["query"] if self.contig else "<unknown id>"
         ref_del, query_del = self._parse_alignment(alignments)
         self.feat2: dict[Pair.T, SeqFeature] = {
             "ref": SeqFeature(
@@ -152,7 +161,9 @@ class AlignRegion:
         if self.contig is not None:
             seq = self.contig.seq2[this]
             if seq is not None:
-                return self.loc2[this].extract(seq.seq)
+                return self.loc2[this].extract(
+                    seq.seq
+                )  # pyright: ignore[reportReturnType]
         return None  # pragma: no cover
 
     @classmethod
@@ -277,6 +288,7 @@ class AlignRegion:
         last_char = ""
         start_i = 0
         align_regions: list[tuple[int, int]] = []
+        i = 0
         for i, c in enumerate(alignment):
             if c == "|":
                 if last_char != "|":
@@ -294,6 +306,7 @@ class AlignRegion:
                 if i - start_i >= min_mask + n_wing:
                     align_regions.append((start_i, i - n_wing))
             last_char = c
+        assert i, "Empty alignment!"
         if last_char == "|":
             # end of the alignment
             # also, we don't care about the end sequence
@@ -359,14 +372,27 @@ class AlignRegion:
             self.loc2[i].strand == other.loc2[i].strand for i in ("ref", "query")
         ), f"Strand not the same, this: {self}, other: {other}"
         assert self.contig is not None
+
         loc_ref = SimpleLocation(
-            min(self.loc2["ref"].start, other.loc2["ref"].start),
-            max(self.loc2["ref"].end, other.loc2["ref"].end),
+            min(
+                self.loc2["ref"].start,  # pyright: ignore[reportArgumentType]
+                other.loc2["ref"].start,  # pyright: ignore[reportArgumentType]
+            ),
+            max(
+                self.loc2["ref"].end,  # pyright: ignore[reportArgumentType]
+                other.loc2["ref"].end,  # pyright: ignore[reportArgumentType]
+            ),
             self.loc2["ref"].strand,
         )
         loc_query = SimpleLocation(
-            min(self.loc2["query"].start, other.loc2["query"].start),
-            max(self.loc2["query"].end, other.loc2["query"].end),
+            min(
+                self.loc2["query"].start,  # pyright: ignore[reportArgumentType]
+                other.loc2["query"].start,  # pyright: ignore[reportArgumentType]
+            ),
+            max(
+                self.loc2["query"].end,  # pyright: ignore[reportArgumentType]
+                other.loc2["query"].end,  # pyright: ignore[reportArgumentType]
+            ),
             self.loc2["query"].strand,
         )
         return self.contig.align((loc_ref, loc_query), align_method)
