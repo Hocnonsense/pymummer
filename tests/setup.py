@@ -2,7 +2,7 @@
 """
  * @Date: 2022-10-13 09:49:04
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-11 16:12:26
+ * @LastEditTime: 2024-08-12 12:27:45
  * @FilePath: /pymummer/tests/setup.py
  * @Description:
 """
@@ -10,7 +10,7 @@
 import os
 from pathlib import Path
 
-repo_path = Path(__file__).parent
+repo_path = Path(__file__).parent.parent
 
 os.chdir(repo_path)
 
