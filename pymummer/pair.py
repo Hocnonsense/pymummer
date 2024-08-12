@@ -26,11 +26,6 @@ class Pair(Generic[FT]):
     """
 
     T = Literal["ref", "query"]
-    ENUM: Final[tuple[Literal["ref"], Literal["query"]]] = T.__args__  # type: ignore
-
-    @classmethod
-    def __iter__(cls):
-        yield from cls.ENUM
 
     @overload
     def __init__(self, f: Callable[[CLS, T, T], FT]): ...
@@ -50,6 +45,8 @@ class Pair(Generic[FT]):
     def __call__(self, cls: CLS):
         self.cls = cls
         return self
+
+    ENUM: Final[tuple[Literal["ref"], Literal["query"]]] = T.__args__  # type: ignore
 
     @classmethod
     def switch(cls, this: T):
@@ -72,6 +69,17 @@ class Pair(Generic[FT]):
     def query(self):
         return self["query"]
 
+    def __iter__(self):
+        yield from self.ENUM
+
+    def values(self):
+        for i in self:
+            yield self[i]
+
+    def items(self):
+        for i in self:
+            yield i, self[i]
+
 
 try:
     import edlib
@@ -88,12 +96,12 @@ try:
               I==D===I====$
         cigar: 1I2=1D3=1I4=
 
-        >>> analyse_edlib("acgtagctgag", "cggtagtgag")
+        >>> align_edlib("acgtagctgag", "cggtagtgag")
         ([1, -3, 4], 3)
         """
         seq1, seq2 = str(seq1), str(seq2)
         ealign = edlib.align(seq1, seq2, mode="NW", task="path")
-        print(ealign)
+        # print(ealign)
         ndiff = int(ealign["editDistance"])
         cigar: str = ealign["cigar"]
         muts: list[int] = []
@@ -124,5 +132,5 @@ try:
             last_str = ""
         return muts, ndiff
 
-except ImportError:
+except ImportError:  # pragma: no cover
     edlib = None

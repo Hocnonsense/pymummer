@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 16:13:55
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-11 17:08:55
+ * @LastEditTime: 2024-08-11 22:09:25
  * @FilePath: /pymummer/tests/pymummer/test_pair.py
  * @Description:
 """
@@ -16,7 +16,7 @@ from pymummer import pair
 def test_doc():
     import doctest
 
-    doctest.testmod(pair)
+    doctest.testmod(pair, raise_on_error=True)
 
 
 def test_pair_decorator():
@@ -33,11 +33,14 @@ def test_pair_decorator():
     for i in Pair.ENUM:
         assert i in ["ref", "query"]
 
+    assert list(d.values()) == [3, 5]
+    assert list(d.items()) == [("ref", 3), ("query", 5)]
+
     try:
         d["X"]  # type: ignore[index]
     except KeyError:
         pass
-    else:
+    else:  # pragma: no cover
         assert not "should raise KeyError"
 
 
