@@ -1,0 +1,14 @@
+name: panaroo
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - BioPython
+  - mummer4
+  - pip
+  - pip:
+      #- edlib
+      - cython
+      #EDLIB_USE_CYTHON=1 pip install --no-cache-dir edlib
