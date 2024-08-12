@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 13:33:30
+ * @LastEditTime: 2024-08-12 15:03:19
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -62,13 +62,13 @@ class AlignContig2:
     @overload
     def align(
         self,
-        locs: tuple[SimpleLocation, SimpleLocation],
+        loc2: tuple[SimpleLocation, SimpleLocation],
         /,
         align_method: Literal["edlib"] = "edlib",
     ) -> "AlignRegion": ...
     def align(
         self,
-        locs: (
+        loc2: (
             Literal[1, -1]
             | tuple[Literal[1, -1], Literal[1, -1]]
             | tuple[SimpleLocation, SimpleLocation]
@@ -77,11 +77,11 @@ class AlignContig2:
         align_method="edlib",
     ):
         # check locs
-        if isinstance(locs, int):
+        if isinstance(loc2, int):
             loc_ref = SimpleLocation(0, len(self.seq2["ref"]), 1)
-            loc_query = SimpleLocation(0, len(self.seq2["query"]), locs)
-        elif isinstance(locs, tuple):
-            _ref, _query = locs
+            loc_query = SimpleLocation(0, len(self.seq2["query"]), loc2)
+        elif isinstance(loc2, tuple):
+            _ref, _query = loc2
             if isinstance(_ref, int):
                 loc_ref = SimpleLocation(0, len(self.seq2["ref"]), _ref)
             else:
@@ -91,7 +91,7 @@ class AlignContig2:
             else:
                 loc_query = _query
         else:
-            raise NotImplementedError(f"not implied {locs = }")  # pragma: no cover
+            raise NotImplementedError(f"not implied {loc2 = }")  # pragma: no cover
         # check align_method and align
         if align_method == "edlib":
             ref_seq = loc_ref.extract(self.seq2["ref"].seq)
@@ -148,11 +148,11 @@ class AlignRegion:
             f"{self.__class__.__name__}"
             f"({self.loc2['ref']}"
             f"~{self.loc2['query']},"
-            f" {self.seq_len}bp-{self.n_mismatch})"
+            f" {self.region_len}bp-{self.n_mismatch})"
         )
 
     @property
-    def seq_len(self):
+    def region_len(self):
         return max(len(i) for i in self.loc2.values())
 
     @property
@@ -416,6 +416,9 @@ class AlignRegion:
         > Delta = (1, -3, 4, 0)
         > A = acg.tagctgag$
         > B = .cggtag.tgag$
+
+        >>> AlignRegion._parse_alignment([1, -3, 4])
+        ([1, 8], [4])
         """
         ref: list[int] = []
         query: list[int] = []
@@ -424,6 +427,8 @@ class AlignRegion:
             if i < 0:
                 prev += -i
                 query.append(prev)
+            elif i == 0:  # pragma: no cover
+                break
             else:
                 prev += i
                 ref.append(prev)
