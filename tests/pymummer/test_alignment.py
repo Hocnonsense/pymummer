@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 10:19:07
+ * @LastEditTime: 2024-08-12 13:14:29
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
  * @Description:
 """
@@ -10,8 +10,10 @@
 
 from tests import Path, temp_output, test_files, test_temp
 
+from Bio.Seq import Seq
+from Bio.SeqFeature import SimpleLocation
 from Bio.SeqRecord import SeqRecord
-from Bio.SeqFeature import Seq, SimpleLocation
+
 from pymummer import alignment
 
 
@@ -42,6 +44,9 @@ def test_align_contig2():
     assert str(ar1) == "AlignRegion([0:11](+)~[0:10](+), 11bp-3)"
     assert ac.seq2["ref"].seq == ar1.seq["ref"] == "acgtagctgag"
     assert str(ar1.seq_align["ref"]) == "acg-tagctgag"
+    assert ar2.alignment is not None
     assert "-||+|||-||||" == ar1.alignment == ar3.alignment
     assert "-|+||||-||||" == ar2.alignment[::-1]
-    assert list(ar1.diff) == ["-", "|", "|", "g+|", "|", "|", "-", "|", "|", "|", "|"]
+    assert ["-", "|", "|", "g+|", "|", "|", "-", "|", "|", "|", "|"] == list(
+        ar1.diff or ()
+    )
