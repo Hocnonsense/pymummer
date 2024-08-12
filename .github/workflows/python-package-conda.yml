@@ -38,15 +38,24 @@ jobs:
       - name: Install post-deploy dependencies
         run: |
           EDLIB_USE_CYTHON=1 pip install --no-cache-dir edlib
+      - name: Install pymummer from source
+        shell: bash -el {0}
+        run: |
+          conda config --set channel_priority strict
+          pip install -e .
 
       - name: Install checks
         run: |
           pip install pytest
-      - name: Test with pytest
+      - name: Test local
+        env:
+          CI: true
         run: |
           python -m pytest -vv
 
       - uses: jakebailey/pyright-action@v1
       - name: Test with pyright
+        env:
+          CI: true
         run: |
           pyright .
