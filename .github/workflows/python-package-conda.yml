@@ -3,30 +3,7 @@ name: Python Package using Conda
 on: [push]
 
 jobs:
-  formatting:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      pull-requests: write # for marocchino/sticky-pull-request-comment to create or update PR comment
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-name: black
-          create-args: black
-          cache-environment: false
-
-      - uses: jakebailey/pyright-action@v1
-
-      - name: Check formatting
-        shell: bash -el {0}
-        run: black --check --diff .
-      - name: Check types
-        shell: bash -el {0}
-        run: pyright .
-
-  test:
+  build-linux:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 5
@@ -43,10 +20,17 @@ jobs:
           echo $CONDA/bin >> $GITHUB_PATH
       - name: Install dependencies
         run: |
-          conda install mummer4 edlib --name base --solver classic
+          conda install mummer4 edlib biopython --name base --solver classic
       - name: Install checks
         run: |
-          conda install pytest --name base --solver classic
+          conda install black pytest --name base --solver classic
+      - name: Lint with black
+        run: |
+          black --check --diff .
       - name: Test with pytest
         run: |
           python -m pytest -vv
+      - uses: jakebailey/pyright-action@v1
+      - name: Test with pyright
+        run: |
+          pyright .
