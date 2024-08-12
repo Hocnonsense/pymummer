@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 21:09:18
+ * @LastEditTime: 2024-08-12 21:16:36
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -33,7 +33,7 @@ def report_flattern_diff(
         write(f">{s}")
         d10_used = {i: True for i in range(n_window)}
         d10: dict[int, tuple[int, int, int, int, list[str]]] = {}
-        last_miss = -1
+        last_miss = basei = -1
         for basei, basesc in enumerate(flattern_align[s]):
             d10[basei % n_window] = (
                 basei,
@@ -71,4 +71,4 @@ def report_flattern_diff(
                         last_miss = -1
                     write(*d10[shift][:-1], *d10[shift][-1])
         if last_miss != -1:
-            write(f"{last_miss}...{d10[shift][0]-1}", 0)
+            write(f"{last_miss}...{basei}", 0)
