@@ -2,6 +2,10 @@ name: Python Package using Conda
 
 on: [push]
 
+defaults:
+  run:
+    shell: bash -el {0}
+
 jobs:
   formatting:
     permissions:
@@ -18,7 +22,6 @@ jobs:
           cache-environment: false
 
       - name: Check formatting
-        shell: bash -el {0}
         run: black --check --diff .
 
   testing:
@@ -38,24 +41,19 @@ jobs:
           init-shell: bash
       - name: Install post-deploy dependencies
         run: |
-          conda activate panaroo
           EDLIB_USE_CYTHON=1 pip install --no-cache-dir edlib
       - name: Install pymummer from source
-        shell: bash -el {0}
         run: |
-          conda activate panaroo
           conda config --set channel_priority strict
           pip install -e tests
 
       - name: Install checks
         run: |
-          conda activate panaroo
           pip install pytest
       - name: Test local
         env:
           CI: true
         run: |
-          conda activate panaroo
           python -m pytest -vv
 
       - uses: jakebailey/pyright-action@v1
