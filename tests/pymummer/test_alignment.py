@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 10:19:07
+ * @LastEditTime: 2024-08-12 11:17:22
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
  * @Description:
 """
@@ -10,8 +10,10 @@
 
 from tests import Path, temp_output, test_files, test_temp
 
+from Bio.Seq import Seq
+from Bio.SeqFeature import SimpleLocation
 from Bio.SeqRecord import SeqRecord
-from Bio.SeqFeature import Seq, SimpleLocation
+
 from pymummer import alignment
 
 

@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 10:27:58
+ * @LastEditTime: 2024-08-12 11:17:10
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -11,7 +11,8 @@
 import os
 from typing import Iterable, Literal, overload
 
-from Bio.SeqFeature import Seq, SeqFeature, SimpleLocation
+from Bio.Seq import Seq
+from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
 
 from .pair import Pair, align_edlib
