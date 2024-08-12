@@ -49,14 +49,12 @@ jobs:
 
       - name: Install checks
         run: |
-          pip install pytest
+          pip install pytest pyright
       - name: Test local
         env:
           CI: true
         run: |
           python -m pytest -vv
-
-      - uses: jakebailey/pyright-action@v1
       - name: Test with pyright
         env:
           CI: true
