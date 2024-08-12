@@ -42,7 +42,7 @@ jobs:
         shell: bash -el {0}
         run: |
           conda config --set channel_priority strict
-          pip install -e .
+          pip install -e tests
 
       - name: Install checks
         run: |
