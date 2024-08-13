@@ -2,15 +2,43 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 21:16:36
+ * @LastEditTime: 2024-08-13 15:14:55
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
 # """
 
+from pathlib import Path
 from sys import stdout
-from .delta import DeltaRegion
+from .delta import Delta, DeltaRegion
 from .pair import Pair
+
+
+def Delta_drop(delta_file: Path):
+    d = Delta(delta_file, {})
+    d.drop_alter("ref")
+    return d
+
+
+def report_flattern_cov(
+    flattern_align: dict[str, list[list[tuple[DeltaRegion, str]]]], Label=""
+):
+    import pandas as pd
+    from collections import Counter
+
+    d = {k: Counter(len(i) for i in v) for k, v in flattern_align.items()}
+    return (
+        pd.DataFrame(d)
+        .pipe(lambda df: df[sorted(df.columns)])
+        .T.pipe(lambda df: df[sorted(df.columns)])
+        .rename_axis(["Contig"], axis=0)
+        .reset_index()
+        .melt(id_vars="Contig", var_name="Breadth", value_name="bp")
+        .assign(Label=Label)
+        .pivot_table(
+            values="bp", index="Label", columns=["Contig", "Breadth"], fill_value=0
+        )
+    )
 
 
 def report_flattern_diff(
