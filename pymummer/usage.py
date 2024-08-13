@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-13 15:14:55
+ * @LastEditTime: 2024-08-13 15:36:04
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -14,8 +14,9 @@ from .delta import Delta, DeltaRegion
 from .pair import Pair
 
 
-def Delta_drop(delta_file: Path):
-    d = Delta(delta_file, {})
+def Delta_drop(delta_file: Path, cache: dict | bool = True) -> Delta:
+    cache_ = ({} if cache else None) if isinstance(cache, bool) else cache
+    d = Delta(delta_file, cache_)
     d.drop_alter("ref")
     return d
 
