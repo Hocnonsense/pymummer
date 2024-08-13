@@ -59,4 +59,4 @@ jobs:
         env:
           CI: true
         run: |
-          pyright .
+          pyright tests/ pymummer/
