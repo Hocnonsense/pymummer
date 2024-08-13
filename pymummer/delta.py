@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 16:24:30
+ * @LastEditTime: 2024-08-13 20:30:46
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -252,7 +252,9 @@ class DeltaContig2(AlignContig2):
                 break
             else:
                 return
-        _alignment, *_alignments = [i.alignment2[target] for i in aln]
+        this = target
+        other = Pair.switch(this)
+        _alignment, *_alignments = [i.alignment2[this] for i in aln]
         assert _alignment is not None
         _alignment1 = _alignment.replace("+", "*").replace("-", "/")
         for _alignment2 in _alignments:
@@ -286,14 +288,14 @@ class DeltaContig2(AlignContig2):
             if aln_i[0] - start_i > 10:
                 align_regions.append((start_i, aln_i[0] + 1))
         for i in aln:
-            query_align, alignment, ref_align = (
-                i.seq_align["query"],
+            other_align, alignment, this_align = (
+                i.seq_align[other],
                 i.alignment,
-                i.seq_align["ref"],
+                i.seq_align[this],
             )
-            assert query_align is not None
+            assert other_align is not None
             assert alignment is not None
-            assert ref_align is not None
+            assert this_align is not None
             for start, end in reversed(align_regions):
                 align_mask_str = f" {end-start:^8} "
                 if len(align_mask_str) == 8:
@@ -307,9 +309,9 @@ class DeltaContig2(AlignContig2):
                         k="bp same", v=len(align_mask_str) - 2
                     )
                 alignment = alignment[:start] + align_mask_str + alignment[end:]
-                ref_align = ref_align[:start] + ref_mask_str + ref_align[end:]
-                query_align = query_align[:start] + query_mask_str + query_align[end:]
-            yield i, ref_align, alignment, query_align
+                this_align = this_align[:start] + ref_mask_str + this_align[end:]
+                other_align = other_align[:start] + query_mask_str + other_align[end:]
+            yield i, this_align, alignment, other_align
 
 
 class DeltaRegion(AlignRegion):

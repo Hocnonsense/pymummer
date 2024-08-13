@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-13 16:21:10
+ * @LastEditTime: 2024-08-13 20:33:59
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -105,3 +105,28 @@ def report_flattern_diff(
                     write(*d10[shift][:-1], *d10[shift][-1])
         if last_miss != -1:
             write(f"{last_miss}...{basei}", 0, basei - last_miss + 1)
+
+
+def report_indel_type1(
+    d: Delta,
+    target: Pair.T,
+    stdout=stdout,
+):
+    write = lambda *x: print(*x, file=stdout)
+    this = target
+    other = Pair.switch(this)
+    ni = 0
+    for g in d.pairs:
+        for i in g.dup_dels:
+            _header = ""
+            _r = ""
+            write(g)
+            for _i, _q, _a, _r in g.render_dup_dels(this, i):
+                if not _header:
+                    write(_q, g.seqid2[this], _i.loc2[this])
+                write(_a, _i.loc2[other])
+                _header = _r
+            write(_header, g.seqid2[other])
+            write()
+            ni += 1
+    return ni
