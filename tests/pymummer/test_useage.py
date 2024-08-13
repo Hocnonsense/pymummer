@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:25:29
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-13 15:18:40
+ * @LastEditTime: 2024-08-13 16:17:30
  * @FilePath: /pymummer/tests/pymummer/test_useage.py
  * @Description:
 """
@@ -49,7 +49,7 @@ def test_delta_cov():
         )
 
 
-def test_delta_str():
+def test_delta_column():
     d = delta.Delta(delta_file, {})
     flattern_align = d.flattern["query"]
     with StringIO() as buf, open(test_files / "compare" / "test_delta_str.tsv") as ref:

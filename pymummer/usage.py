@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-13 15:36:04
+ * @LastEditTime: 2024-08-13 16:21:10
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -96,8 +96,12 @@ def report_flattern_diff(
                             last_miss = d10[shift][0]
                         continue
                     if last_miss != -1:
-                        write(f"{last_miss}...{d10[shift][0]-1}", 0)
+                        write(
+                            f"{last_miss}...{d10[shift][0]-1}",
+                            0,
+                            d10[shift][0] - last_miss,
+                        )
                         last_miss = -1
                     write(*d10[shift][:-1], *d10[shift][-1])
         if last_miss != -1:
-            write(f"{last_miss}...{basei}", 0)
+            write(f"{last_miss}...{basei}", 0, basei - last_miss + 1)
