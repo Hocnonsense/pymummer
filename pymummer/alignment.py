@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 15:03:19
+ * @LastEditTime: 2024-08-14 17:22:23
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -370,7 +370,7 @@ class AlignRegion:
         ), f"Not of the same group, this: {self.contig}, other: {other.contig}"
         assert all(
             self.loc2[i].strand == other.loc2[i].strand for i in ("ref", "query")
-        ), f"Strand not the same, this: {self}, other: {other}"
+        ), f"Strand not the same, this: {self}, other: {other}, contig: {self.contig}"
         assert self.contig is not None
 
         loc_ref = SimpleLocation(

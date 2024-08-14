@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-13 20:30:46
+ * @LastEditTime: 2024-08-14 21:45:22
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -11,6 +11,7 @@
 
 import os
 from pathlib import Path
+from sys import stdout
 from typing import Literal, TextIO, overload
 
 from Bio import SeqFeature, SeqIO
@@ -244,9 +245,8 @@ class DeltaContig2(AlignContig2):
         for aln in alns.values():
             if len(aln) > 1:
                 yield aln
-        return False
 
-    def render_dup_dels(self, target: Pair.T, aln: list["DeltaRegion"] | None = None):
+    def mask_twin_same(self, target: Pair.T, aln: list["DeltaRegion"] | None = None):
         if aln is None:
             for aln in self.dup_dels:
                 break
@@ -312,6 +312,25 @@ class DeltaContig2(AlignContig2):
                 this_align = this_align[:start] + ref_mask_str + this_align[end:]
                 other_align = other_align[:start] + query_mask_str + other_align[end:]
             yield i, this_align, alignment, other_align
+
+    def write_mask_regions(self, alignregions: list["DeltaRegion"], stdout=stdout):
+        write = lambda *x: print(*x, file=stdout)
+        this = "ref"
+        other = Pair.switch(this)
+        _other_align = ""
+        _i = None
+        for _i, _q, _a, _r in self.mask_twin_same(this, alignregions):
+            if not _other_align:
+                write(_q, self.seqid2[this], _i.loc2[this])
+            write(
+                _a,
+                len(_i.feat2["ref"].qualifiers["ins"]),
+                ":",
+                -len(_i.feat2["query"].qualifiers["ins"]),
+            )
+            _other_align = _r
+        assert _i is not None, f"empty {alignregions = }"
+        write(_other_align, self.seqid2[other], _i.loc2[other])
 
 
 class DeltaRegion(AlignRegion):
