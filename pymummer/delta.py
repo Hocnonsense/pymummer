@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 18:29:50
+ * @LastEditTime: 2024-08-15 20:29:37
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -134,11 +134,11 @@ class Delta:
     @Pair
     def flatten(self, this: Pair.T, other: Pair.T):
         assert self.seqs is not None
-        flattern_align: dict[str, list[list[tuple[DeltaRegion, str]]]] = {
+        flatten_align: dict[str, list[list[tuple[DeltaRegion, str]]]] = {
             s: [[] for i in range(len(q))] for s, q in self.seqs[this].items()
         }
-        flatten(self.pairs, this, flattern_align)  # pyright: ignore[reportArgumentType]
-        return flattern_align
+        flatten(self.pairs, this, flatten_align)  # pyright: ignore[reportArgumentType]
+        return flatten_align
 
     @overload
     @classmethod

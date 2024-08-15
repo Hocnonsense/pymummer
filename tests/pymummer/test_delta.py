@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 14:35:01
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 20:05:59
+ * @LastEditTime: 2024-08-15 20:30:05
  * @FilePath: /pymummer/tests/pymummer/test_delta.py
  * @Description:
 """
@@ -80,11 +80,11 @@ def test_delta_str():
         ]
 
 
-def test_delta_flattern():
+def test_delta_flatten():
     d = delta.Delta(delta_file, {})
-    flattern_align = d.flatten["query"]
+    flatten_align = d.flatten["query"]
     assert {1: 2558, 0: 843, 2: 228} == Counter(
-        len(i) for i in flattern_align["NZ_CP008888.1"]
+        len(i) for i in flatten_align["NZ_CP008888.1"]
     )
     assert {k: Counter(len(i) for i in v) for k, v in d.flatten["ref"].items()} == {
         "NODE_1564_length_766_cov_111365.326301": {1: 725, 2: 41},

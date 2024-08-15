@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:20:33
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 20:02:55
+ * @LastEditTime: 2024-08-15 20:29:18
  * @FilePath: /pymummer/pymummer/flatten.py
  * @Description:
 """
@@ -22,18 +22,18 @@ from .alignment import AlignContig2, AlignRegion
 def flatten(
     acs: Iterable[AlignContig2],
     target: Pair.T = "ref",
-    flattern_dict: dict[str, list[list[tuple[AlignRegion, str]]]] | None = None,
+    flatten_dict: dict[str, list[list[tuple[AlignRegion, str]]]] | None = None,
 ):
     """
     Warning: MUST make sure seqid is identical in all AlignContig2 !!!
     """
     this = target
     other = Pair.switch(this)
-    if flattern_dict is None:
-        flattern_dict = {}
+    if flatten_dict is None:
+        flatten_dict = {}
     for g in acs:
-        if g.seqid2[this] not in flattern_dict:
-            flattern_dict[g.seqid2[this]] = [[] for i in range(len(g.seq2[this]))]
+        if g.seqid2[this] not in flatten_dict:
+            flatten_dict[g.seqid2[this]] = [[] for i in range(len(g.seq2[this]))]
         for i in g.alignregions:
             ref, query = i.seq_align[other], i.seq_align[this]
             assert ref is not None and query is not None
@@ -46,15 +46,15 @@ def flatten(
                 i.loc2[this].start,  # pyright: ignore[reportArgumentType]
             ):
                 assert i.contig is not None
-                flattern_dict[i.contig.seqid2[this]][align_base[0]].append(
+                flatten_dict[i.contig.seqid2[this]][align_base[0]].append(
                     (i, align_base[1])
                 )
-    return flattern_dict
+    return flatten_dict
 
 
 def flatten2feat(
     feat: SeqFeature,
-    flatten: Mapping[str, Sequence[Sequence[tuple[AlignRegion, str]]]],
+    flatten_align: Mapping[str, Sequence[Sequence[tuple[AlignRegion, str]]]],
     rec: SeqRecord,
 ):
     assert feat.location is not None
@@ -65,7 +65,7 @@ def flatten2feat(
     ar2start_end: dict[AlignRegion, list[int]] = {}
     for basei in feat.location:
         refbase = rec[basei]
-        for ar, s in flatten[seqid][basei]:
+        for ar, s in flatten_align[seqid][basei]:
             if ar not in ar2rec:
                 ar2rec[ar] = refseq  # same prefix
                 ar2start_end[ar] = [len(refseq), -1]
@@ -105,14 +105,14 @@ def flatten2feat(
         )
 
 
-def report_flattern_cov(
-    flattern_align: Mapping[str, Sequence[Sequence[tuple[AlignRegion, str]]]], Label=""
+def report_flatten_cov(
+    flatten_align: Mapping[str, Sequence[Sequence[tuple[AlignRegion, str]]]], Label=""
 ):
     from collections import Counter
 
     import pandas as pd
 
-    d = {k: Counter(len(i) for i in v) for k, v in flattern_align.items()}
+    d = {k: Counter(len(i) for i in v) for k, v in flatten_align.items()}
     return (
         pd.DataFrame(d)
         .pipe(lambda df: df[sorted(df.columns)])
@@ -127,8 +127,8 @@ def report_flattern_cov(
     )
 
 
-def report_flattern_diff(
-    flattern_align: Mapping[str, Sequence[Sequence[tuple[AlignRegion, str]]]],
+def report_flatten_diff(
+    flatten_align: Mapping[str, Sequence[Sequence[tuple[AlignRegion, str]]]],
     n_window=10,
     min_diff=3,
     include_unaligned=False,
@@ -138,18 +138,18 @@ def report_flattern_diff(
     write("#" + ">SeqID")
     write("#" + "loc", "n_identical", "n_diff", "min_diff", "*aligns")
     this: Pair.T = "ref"
-    for s in flattern_align:
-        contig = flattern_align[s][0][0][0].contig
+    for s in flatten_align:
+        contig = flatten_align[s][0][0][0].contig
         if contig is not None and contig.seqid2["query"] == s:
             this = "query"
         break
     other = Pair.switch(this)
-    for s in flattern_align:
+    for s in flatten_align:
         write(f">{s}")
         d10_used = {i: True for i in range(n_window)}
         d10: dict[int, tuple[int, int, int, int, list[str]]] = {}
         last_miss = basei = -1
-        for basei, basesc in enumerate(flattern_align[s]):
+        for basei, basesc in enumerate(flatten_align[s]):
             d10[basei % n_window] = (
                 basei,
                 sum("|" in s for ali, s in basesc),

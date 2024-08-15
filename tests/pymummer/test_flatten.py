@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:24:56
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 20:02:35
+ * @LastEditTime: 2024-08-15 20:30:27
  * @FilePath: /pymummer/tests/pymummer/test_flatten.py
  * @Description:
 """
@@ -34,13 +34,13 @@ def _make_example():
     return ac, ar1
 
 
-def test_flattern():
+def test_flatten():
     ac, ar1 = _make_example()
     ar3 = ac.align((SimpleLocation(0, 4, 1), SimpleLocation(0, 5, 1)))
     ac.alignregions.append(ar3)
-    flattern = flatten.flatten([ac])
+    flatten_align = flatten.flatten([ac])
     assert str(ar3.seq["query"]) == "cggta"
-    assert flattern == {
+    assert flatten_align == {
         "test1": [
             [(ar1, "-"), (ar3, "-")],  # a -> "", ""
             [(ar1, "|"), (ar3, "|")],  # c -> "c", "c"
@@ -57,7 +57,9 @@ def test_flattern():
     }
     feat = SeqFeature(ar1.loc2["ref"])
     ac.seq2["ref"].id = ac.seqid2["ref"]
-    feat2rec = {k: v for k, v in flatten.flatten2feat(feat, flattern, ac.seq2["ref"])}
+    feat2rec = {
+        k: v for k, v in flatten.flatten2feat(feat, flatten_align, ac.seq2["ref"])
+    }
     assert feat2rec[ar1].seq == ar1.seq["query"]
     assert feat2rec[ar1].annotations["Support"] == [(0, 10)]
     assert str(feat2rec[ar3].seq) == "cggtaagctgag"
@@ -78,7 +80,7 @@ def test_delta_drop():
 def test_delta_cov():
     d = delta.Delta(delta_file, {})
     with StringIO() as buf:
-        s = flatten.report_flattern_cov(d.flatten["ref"], d.query.stem).to_csv(buf)
+        s = flatten.report_flatten_cov(d.flatten["ref"], d.query.stem).to_csv(buf)
         buf.seek(0)
         assert buf.read() == (
             "Contig,NODE_1564_length_766_cov_111365.326301,NODE_1564_length_766_cov_111365.326301,NODE_1652_length_710_cov_139106.876336,NODE_1652_length_710_cov_139106.876336,NODE_733_length_1545_cov_136201.359060,NODE_733_length_1545_cov_136201.359060\n"
@@ -87,7 +89,7 @@ def test_delta_cov():
             "A501-plasmid,725.0,41.0,1.0,709.0,48.0,1497.0\n"
         )
     with StringIO() as buf:
-        s = flatten.report_flattern_cov(d.flatten["query"], d.ref.stem).to_csv(buf)
+        s = flatten.report_flatten_cov(d.flatten["query"], d.ref.stem).to_csv(buf)
         buf.seek(0)
         assert buf.read() == (
             "Contig,NZ_CP008888.1,NZ_CP008888.1,NZ_CP008888.1\n"
@@ -99,15 +101,15 @@ def test_delta_cov():
 
 def test_delta_column():
     d = delta.Delta(delta_file, {})
-    flattern_align = d.flatten["query"]
+    flatten_align = d.flatten["query"]
     with StringIO() as buf, open(test_files / "compare" / "test_delta_str.tsv") as ref:
-        flatten.report_flattern_diff(
-            flattern_align, min_diff=3, include_unaligned=True, stdout=buf
+        flatten.report_flatten_diff(
+            flatten_align, min_diff=3, include_unaligned=True, stdout=buf
         )
         buf.seek(0)
         assert buf.read() == ref.read()
     with StringIO() as buf:
-        flatten.report_flattern_diff(flattern_align, min_diff=3, stdout=buf)
+        flatten.report_flatten_diff(flatten_align, min_diff=3, stdout=buf)
         buf.seek(0)
         assert buf.read() == (
             "#>SeqID\n"
