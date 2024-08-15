@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 18:17:57
+ * @LastEditTime: 2024-08-15 18:29:50
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -16,7 +16,8 @@ from typing import Literal, TextIO, overload
 
 from Bio import SeqFeature, SeqIO
 
-from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation, flatten
+from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation
+from .flatten import flatten
 from .pair import Pair
 
 
