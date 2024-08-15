@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-14 21:45:22
+ * @LastEditTime: 2024-08-15 18:17:57
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -16,7 +16,7 @@ from typing import Literal, TextIO, overload
 
 from Bio import SeqFeature, SeqIO
 
-from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation
+from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation, flatten
 from .pair import Pair
 
 
@@ -131,27 +131,12 @@ class Delta:
 
     @property
     @Pair
-    def flattern(self, this: Pair.T, other: Pair.T):
+    def flatten(self, this: Pair.T, other: Pair.T):
         assert self.seqs is not None
         flattern_align: dict[str, list[list[tuple[DeltaRegion, str]]]] = {
             s: [[] for i in range(len(q))] for s, q in self.seqs[this].items()
         }
-        for g in self.pairs:
-            for i in g.alignregions:
-                ref, query = i.seq_align[other], i.seq_align[this]
-                assert ref is not None and query is not None
-                if i.loc2[this].strand == "-":  # pragma: no cover
-                    # reverse back
-                    ref = ref.reverse_complement()
-                    query = query.reverse_complement()
-                for align_base in enumerate(
-                    i.pair2diff(query, ref),
-                    i.loc2[this].start - 1,  # pyright: ignore[reportOperatorIssue]
-                ):
-                    assert i.contig is not None
-                    flattern_align[i.contig.seqid2[this]][align_base[0]].append(
-                        (i, align_base[1])
-                    )
+        flatten(self.pairs, this, flattern_align)  # pyright: ignore[reportArgumentType]
         return flattern_align
 
     @overload
@@ -159,11 +144,13 @@ class Delta:
     def run_nucmer(
         cls, ref: Path, query: Path, outprefix: Path, load: Literal[False]
     ) -> Path: ...
+
     @overload
     @classmethod
     def run_nucmer(
         cls, ref: Path, query: Path, outprefix: Path, load: Literal[True] = True
     ) -> "Delta": ...
+
     @classmethod
     def run_nucmer(cls, ref: Path, query: Path, outprefix: Path, load=True):
         os.system(f"nucmer {ref} {query} -p {outprefix}")

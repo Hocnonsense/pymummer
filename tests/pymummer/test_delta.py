@@ -82,11 +82,11 @@ def test_delta_str():
 
 def test_delta_flattern():
     d = delta.Delta(delta_file, {})
-    flattern_align = d.flattern["query"]
+    flattern_align = d.flatten["query"]
     assert {1: 2558, 0: 843, 2: 228} == Counter(
         len(i) for i in flattern_align["NZ_CP008888.1"]
     )
-    assert {k: Counter(len(i) for i in v) for k, v in d.flattern["ref"].items()} == {
+    assert {k: Counter(len(i) for i in v) for k, v in d.flatten["ref"].items()} == {
         "NODE_1564_length_766_cov_111365.326301": {1: 725, 2: 41},
         "NODE_1652_length_710_cov_139106.876336": {1: 709, 0: 1},
         "NODE_733_length_1545_cov_136201.359060": {1: 1497, 0: 48},

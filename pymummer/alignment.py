@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-14 17:22:23
+ * @LastEditTime: 2024-08-15 17:51:56
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -433,3 +433,89 @@ class AlignRegion:
                 prev += i
                 ref.append(prev)
         return ref, query
+
+
+def flatten(
+    acs: Iterable[AlignContig2],
+    target: Pair.T = "ref",
+    flattern_dict: dict[str, list[list[tuple[AlignRegion, str]]]] | None = None,
+):
+    """
+    Warning: MUST make sure seqid is identical in all AlignContig2 !!!
+    """
+    this = target
+    other = Pair.switch(this)
+    if flattern_dict is None:
+        flattern_dict = {}
+    for g in acs:
+        if g.seqid2[this] not in flattern_dict:
+            flattern_dict[g.seqid2[this]] = [[] for i in range(len(g.seq2[this]))]
+        for i in g.alignregions:
+            ref, query = i.seq_align[other], i.seq_align[this]
+            assert ref is not None and query is not None
+            if i.loc2[this].strand == -1:  # pragma: no cover
+                # reverse back
+                ref = ref.reverse_complement()
+                query = query.reverse_complement()
+            for align_base in enumerate(
+                i.pair2diff(query, ref),
+                i.loc2[this].start,  # pyright: ignore[reportArgumentType]
+            ):
+                assert i.contig is not None
+                flattern_dict[i.contig.seqid2[this]][align_base[0]].append(
+                    (i, align_base[1])
+                )
+    return flattern_dict
+
+
+def flatten2feat(
+    feat: SeqFeature,
+    flatten: dict[str, list[list[tuple[AlignRegion, str]]]],
+    rec: SeqRecord,
+):
+    assert feat.location is not None
+    seqid = rec.id
+    assert seqid is not None
+    refseq = rec[:0]
+    ar2rec = {}
+    ar2start_end: dict[AlignRegion, list[int]] = {}
+    for basei in feat.location:
+        refbase = rec[basei]
+        for ar, s in flatten[seqid][basei]:
+            if ar not in ar2rec:
+                ar2rec[ar] = refseq  # same prefix
+                ar2start_end[ar] = [len(refseq), -1]
+            elif len(ar2start_end[ar]) % 2:
+                ar2start_end[ar][-1] = len(refseq)
+                ar2start_end[ar].append(-1)
+            ar2rec[ar] += s.replace("-", "").replace("+", "").replace("|", refbase)
+            ar2start_end[ar][-1] = -1
+        # |   | 1. len(ar2start_end[ar]) % 2
+        # |   |       | 2. ar2start_end[ar][-1] == -1
+        # | a | True  | True  | new base added (ar2start_end[ar][-1] reset in last iter)
+        # | b | True  | False | no new base added (ar2start_end[ar][-1] kept)
+        # | c | False | False | no new base added (the last alignment ended, never restart)
+        # | c | False | True  | Impossible, what's wrong?
+        for ar in ar2start_end:
+            if len(ar2start_end[ar]) % 2:
+                ar2rec[ar] += refbase
+                "disabled as no alignmnet"
+            elif ar2start_end[ar][-1] == -1:
+                ar2start_end[ar][-1] = len(ar2rec[ar])
+            else:
+                ar2start_end[ar].append(-1)
+                ar2rec[ar] += refbase
+        refseq += refbase
+    for ar, supp in ar2start_end.items():
+        assert ar.contig
+        yield ar, SeqRecord(
+            Seq(ar2rec[ar].seq),
+            id=feat.id,
+            description=f"{ar.contig.seqid2['query']} {ar}",
+            annotations={  # pyright: ignore[reportArgumentType]
+                "Support": [
+                    tuple(supp[i * 2 : i * 2 + 2]) for i in range(len(supp) // 2)
+                ],
+            }
+            | feat.qualifiers,
+        )
