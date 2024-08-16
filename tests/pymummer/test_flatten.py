@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:24:56
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 20:30:27
+ * @LastEditTime: 2024-08-16 21:37:43
  * @FilePath: /pymummer/tests/pymummer/test_flatten.py
  * @Description:
 """
@@ -10,9 +10,11 @@
 
 from io import StringIO
 
+from Bio import BiopythonWarning
 from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
+import pytest
 
 from pymummer import alignment, delta, flatten, usage
 from tests import Path, temp_output, test_files, test_temp
@@ -134,4 +136,45 @@ def test_delta_column():
             "3397\t2\t0\t0\tNODE_1564_length_766_cov_111365.326301[0:238](+): |\tNODE_1564_length_766_cov_111365.326301[197:766](+): |\n"
             "3398\t2\t0\t0\tNODE_1564_length_766_cov_111365.326301[0:238](+): |\tNODE_1564_length_766_cov_111365.326301[197:766](+): |\n"
             "3399\t2\t0\t0\tNODE_1564_length_766_cov_111365.326301[0:238](+): |\tNODE_1564_length_766_cov_111365.326301[197:766](+): |\n"
+        )
+
+
+def test_try_get_cds_end():
+    d = delta.Delta(delta_file, {})
+    assert d.seqs
+    flatten_align = d.flatten["query"]
+    feat = SeqFeature(SimpleLocation(80, 308, -1))
+    with pytest.warns(BiopythonWarning, match="Partial codon, "):
+        rep_seq = feat.extract(d.seqs["query"]["NZ_CP008888.1"].seq)
+        assert (
+            rep_seq
+            == flatten.try_get_cds_end(
+                feat, flatten_align, d.seqs["query"]["NZ_CP008888.1"]
+            )[1].seq
+        )
+        assert (
+            rep_seq
+            == flatten.try_get_cds_end(
+                SeqFeature(SimpleLocation(90, 308, -1)),
+                flatten_align,
+                d.seqs["query"]["NZ_CP008888.1"],
+            )[1].seq
+        )
+        assert (
+            rep_seq
+            == flatten.try_get_cds_end(
+                SeqFeature(SimpleLocation(40, 308, -1)),
+                flatten_align,
+                d.seqs["query"]["NZ_CP008888.1"],
+            )[1].seq
+        )
+        feat = SeqFeature(SimpleLocation(80, 185, 1))
+        rep_seq = feat.extract(d.seqs["query"]["NZ_CP008888.1"].seq)
+        assert (
+            rep_seq
+            == flatten.try_get_cds_end(
+                SeqFeature(SimpleLocation(80, 180, 1)),
+                flatten_align,
+                d.seqs["query"]["NZ_CP008888.1"],
+            )[1].seq
         )

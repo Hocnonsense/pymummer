@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 20:16:02
+ * @LastEditTime: 2024-08-16 22:15:12
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -10,8 +10,12 @@
 
 from pathlib import Path
 from sys import stdout
+from typing import Iterable
+from Bio.SeqFeature import SeqFeature, SimpleLocation
+from Bio.SeqRecord import SeqRecord
 
-from .alignment import AlignRegion
+from .flatten import flatten2feat, try_get_cds_end
+from .alignment import AlignContig2, AlignRegion
 from .delta import Delta, DeltaRegion
 from .pair import Pair
 
@@ -25,11 +29,12 @@ def Delta_drop(delta_file: Path, cache: dict | bool = True) -> Delta:
 
 def report_indel_redund(d: Delta, stdout=stdout):
     write = lambda *x: print(*x, file=stdout)
-    this = "ref"
+    this: Pair.T = "ref"
     other = Pair.switch(this)
     ni = 0
+    i: list[AlignRegion]
     for g in d.pairs:
-        for i in g.dup_dels:
+        for i in g.dup_dels:  # pyright: ignore[reportAssignmentType]
             if ni:  # new line between each item
                 write()
             g.write_mask_regions(i, stdout)
@@ -41,7 +46,7 @@ def report_indel_long(
     d: Delta, min_diff=5, skip_aln: set[AlignRegion] | None = None, stdout=stdout
 ):
     write = lambda *x: print(*x, file=stdout)
-    this = "ref"
+    this: Pair.T = "ref"
     other = Pair.switch(this)
     ni = 0
     for g in d.pairs:
@@ -65,7 +70,7 @@ def report_indel_looong(
     d: Delta, skip_aln: set[DeltaRegion] | None = None, stdout=stdout
 ):
     write = lambda *x: print(*x, file=stdout)
-    this = "ref"
+    this: Pair.T = "ref"
     other = Pair.switch(this)
     ni = 0
     nj = 0
@@ -141,3 +146,127 @@ def report_indel_looong(
                 )
             ni += 1
     return ni, nj
+
+
+def read_prodigal_gff(gff: Path):
+    with open(gff) as f:
+        for line in f:
+            if line.startswith("##FASTA"):
+                break
+            if line.startswith(">"):
+                break
+            if line.startswith("#"):
+                continue
+            # NODE_1_length_25392_cov_15065.424675 pyrodigal_v3.3.0 CDS 3 1547 179.6 + 0 ID=NODE_1_length_25392_cov_15065.424675_1;partial=10;start_type=Edge;rbs_motif=None;rbs_spacer=None;gc_cont=0.410;transl_table=11;conf=99.99;score=179.62;cscore=176.40;sscore=3.22;rscore=0.00;uscore=0.00;tscore=3.22;
+            seqid, source, featype, start, end, score, strand, frame, attributes = (
+                line.strip().split("\t")
+            )
+            qualifiers = {
+                "source": [source],
+                "score": [score],
+                "seqid": [seqid],
+                "frame": [frame],
+            }
+            qualifiers.update(
+                {
+                    k: v.split(",")
+                    for k, v in (x.split("=") for x in attributes.strip(";").split(";"))
+                }
+            )
+            start_, stop_ = sorted((int(start), int(end)))
+            yield seqid, SeqFeature(
+                # Convert from GFF 1-based to standard Python 0-based indexing used by
+                # BioPython
+                SimpleLocation(start_ - 1, stop_, strand=1 if strand == "+" else -1),
+                id=qualifiers["ID"][0],
+                type=featype,
+                qualifiers=qualifiers,
+            )
+
+
+def report_mut_feat_cds(
+    d: Delta,
+    feats: Iterable[tuple[str, SeqFeature]],
+    template: Pair.T = "ref",
+    stdout=stdout,
+):
+    assert d.seqs
+    write = lambda *x: print(*x, file=stdout)
+    this = template
+    other = Pair.switch(this)
+    ni = 0
+    nj = 0
+    flatten = d.flatten[this]
+    mut_translates = {
+        (seqid, str(feat.location)): (feat, seq2ar_rec)
+        for seqid, feat in feats
+        if (
+            seq2ar_rec := {
+                rec.seq: (ar, rec)
+                for ar, rec in flatten2feat(feat, flatten, d.seqs[this][seqid])
+            }
+        )
+        and not (
+            len(seq2ar_rec) == 1 and feat.extract(d.seqs[this][seqid].seq) in seq2ar_rec
+        )
+    }
+    for (seqid, loc), (feat, seq2ar_rec) in mut_translates.items():
+        refcds: SeqRecord = feat.extract(  # pyright: ignore[reportAssignmentType]
+            d.seqs[this][seqid]
+        )
+        has_the_same = refcds.seq in seq2ar_rec
+        # print(f"#{seqid} {repr(feat)} {loc} {has_the_same=}")
+        if ni + nj:
+            write()
+        for ar, rec in seq2ar_rec.values():
+            assert ar.contig is not None
+            if rec.seq == refcds.seq:
+                continue
+            write(repr(rec), ar, ar.contig)
+            ni += 1
+            desc = ""
+            mutid = f"{feat.id}-{ar.contig.seqid2[template]}-{ar}"
+            ar_cds = AlignContig2(
+                ("template transcript", "mutation"), (refcds, rec)
+            ).align()
+            mut_translate = rec.translate()
+            refaa = refcds.translate()
+            ar_aa = AlignContig2(
+                ("template protein", "mutation"), (refaa, mut_translate)
+            ).align()
+            _feat, new_rec = try_get_cds_end(
+                feat, flatten, d.seqs[this][seqid], {ar}, True
+            )
+            assert ar_cds.contig is not None and ar_aa.contig is not None
+            assert rec.seq is not None
+            if len(rec.seq) % 3:
+                write("Frame shift detected!")
+                if "*" in mut_translate.seq[:-1]:
+                    desc = "Early terminal!"
+                elif "*" not in mut_translate.seq:
+                    desc = "Late terminal!"
+                if _feat == feat and not rec.seq.endswith("*"):
+                    desc += " cannot find a stop codon!"
+                ar_cds.contig.write_mask_regions([ar_cds], stdout)
+                ar_aa.contig.write_mask_regions([ar_aa], stdout)
+                write(f">{mutid} {desc}\n{new_rec.seq}")
+            elif len(refcds) == len(rec):
+                write("SNP detected!")
+                ar_cds.contig.write_mask_regions([ar_cds], stdout)
+                if refaa == mut_translate.seq:
+                    write("Synonymous mutation (silent)")
+                elif len(refaa) == len(mut_translate.seq):
+                    write("Non-synonymous mutation (missense)!")
+                    if ar_aa.seq and "*" in mut_translate.seq[:-1]:
+                        write("Early terminal!")
+                    ar_aa.contig.write_mask_regions([ar_aa], stdout)
+                    write(f">{mutid} {desc}\n{new_rec.seq}")
+                else:
+                    write("Non-synonymous mutation (nonsense)!")
+                    ar_aa.contig.write_mask_regions([ar_aa], stdout)
+                    write(f">{mutid} {desc}\n{new_rec.seq}")
+            else:
+                write("Indel mutation without frame shift")
+                ar_cds.contig.write_mask_regions([ar_cds], stdout)
+                ar_aa.contig.write_mask_regions([ar_aa], stdout)
+                write(f">{mutid} {desc}\n{new_rec.seq}")

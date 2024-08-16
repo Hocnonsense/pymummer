@@ -2,14 +2,15 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 18:21:00
+ * @LastEditTime: 2024-08-15 22:44:47
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
 # """
 
 import os
-from typing import Iterable, Literal, overload
+from typing import Iterable, Literal, Sequence, overload
+from sys import stdout
 
 from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation
@@ -111,6 +112,87 @@ class AlignContig2:
     @property
     def region_class(self):
         return self._get_region_class()
+
+    def mask_twin_same(self, target: Pair.T, aln: Sequence["AlignRegion"]):
+        this = target
+        other = Pair.switch(this)
+        _alignment, *_alignments = [i.alignment2[this] for i in aln]
+        assert _alignment is not None
+        _alignment1 = _alignment.replace("+", "*").replace("-", "/")
+        for _alignment2 in _alignments:
+            assert _alignment2 is not None
+            _alignment1 = (
+                aln[0]
+                .pair2align(
+                    _alignment1.replace("|", "!"), _alignment2.replace("|", "!")
+                )
+                .replace("!", "+")
+                .replace("+", "*")
+                .replace("-", "/")
+            )
+        last_char = None
+        start_i = 0
+        align_regions: list[tuple[int, int]] = []
+        aln_i = (0, "")
+        for aln_i in enumerate(_alignment1):
+            if aln_i[1] == "|":
+                if last_char != "|":
+                    start_i = aln_i[0]
+            elif last_char == "|":
+                if start_i != 0:
+                    start_i += 5
+                if aln_i[0] - start_i > 15:
+                    align_regions.append((start_i, aln_i[0] - 5))
+            last_char = aln_i[1]
+        if last_char == "|":
+            if start_i != 0:
+                start_i += 5
+            if aln_i[0] - start_i > 10:
+                align_regions.append((start_i, aln_i[0] + 1))
+        for i in aln:
+            other_align, alignment, this_align = (
+                i.seq_align[other],
+                i.alignment,
+                i.seq_align[this],
+            )
+            assert other_align is not None
+            assert alignment is not None
+            assert this_align is not None
+            for start, end in reversed(align_regions):
+                align_mask_str = f" {end-start:^8} "
+                if len(align_mask_str) == 8:
+                    ref_mask_str = f"[ masked ]"
+                    query_mask_str = f"[bp same ]"
+                else:
+                    ref_mask_str = "[{k:^{v}}]".format(
+                        k="masked", v=len(align_mask_str) - 2
+                    )
+                    query_mask_str = "[{k:^{v}}]".format(
+                        k="bp same", v=len(align_mask_str) - 2
+                    )
+                alignment = alignment[:start] + align_mask_str + alignment[end:]
+                this_align = this_align[:start] + ref_mask_str + this_align[end:]
+                other_align = other_align[:start] + query_mask_str + other_align[end:]
+            yield i, this_align, alignment, other_align
+
+    def write_mask_regions(self, alignregions: Sequence["AlignRegion"], stdout=stdout):
+        write = lambda *x: print(*x, file=stdout)
+        this: Pair.T = "ref"
+        other = Pair.switch(this)
+        _other_align = ""
+        _i = None
+        for _i, _q, _a, _r in self.mask_twin_same(this, alignregions):
+            if not _other_align:
+                write(_q, self.seqid2[this], _i.loc2[this])
+            write(
+                _a,
+                len(_i.feat2["ref"].qualifiers["ins"]),
+                ":",
+                -len(_i.feat2["query"].qualifiers["ins"]),
+            )
+            _other_align = _r
+        assert _i is not None, f"empty {alignregions = }"
+        write(_other_align, self.seqid2[other], _i.loc2[other])
 
 
 class AlignRegion:
@@ -369,7 +451,7 @@ class AlignRegion:
             self.contig == other.contig
         ), f"Not of the same group, this: {self.contig}, other: {other.contig}"
         assert all(
-            self.loc2[i].strand == other.loc2[i].strand for i in ("ref", "query")
+            self.loc2[i].strand == other.loc2[i].strand for i in Pair.ENUM  # type: ignore[index]
         ), f"Strand not the same, this: {self}, other: {other}, contig: {self.contig}"
         assert self.contig is not None
 

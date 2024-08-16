@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 14:35:01
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 20:30:05
+ * @LastEditTime: 2024-08-15 22:23:24
  * @FilePath: /pymummer/tests/pymummer/test_delta.py
  * @Description:
 """
@@ -47,7 +47,7 @@ def test_make_delta(test_temp: Path):
 def test_load_delta():
     d = delta.Delta(delta_file)
     assert d.seqs is None
-    cache = {}
+    cache: dict = {}
     d = delta.Delta(delta_file, cache)
     assert len(cache) == 2
     d.pairs[0].seq2["ref"]
