@@ -13,3 +13,4 @@ dependencies:
       #- edlib
       - cython
       #EDLIB_USE_CYTHON=1 pip install --no-cache-dir edlib
+      - hgvs
