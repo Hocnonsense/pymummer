@@ -1,4 +1,4 @@
-from typing import Callable, Generic, Literal, TypeVar, Final, overload
+from typing import Callable, Generic, Literal, Sequence, TypeVar, Final, overload
 
 
 FT = TypeVar("FT")
@@ -133,5 +133,92 @@ try:
             last_str = ""
         return muts, ndiff
 
+    IMPORT_AVAIL_EDLIB = True
 except ImportError:  # pragma: no cover
-    edlib = None
+    IMPORT_AVAIL_EDLIB = False
+
+
+try:
+    from hgvs import sequencevariant, posedit, location, edit
+
+    DOC_DEFINE_HGVS = """Creates a genomic SequenceVariant from a VCF record and the specified alt
+
+    https://www.hgvs.org/
+    https://onlinelibrary.wiley.com/doi/10.1002/humu.22981
+
+    Table 1. Nomenclature Definitions with Example Variant Descriptions
+    | Type          | Example               | Description
+    |---------------|-----------------------|----------------------------------------
+    | [>][2]        | g.1318G>T             | […][1] 1 nucleotide is replaced by 1 other nucleotide
+    | del(etion)	| g.3661_3706del        | … >=1 nucleotides are not present (deleted)
+    | ins(ertion)	| g.7339_7340insTAGG    | … >=1 nucleotides are inserted in a sequence and where the insertion is not a copy of a sequence immediately 5'
+    | [indel][3]    | g.112_117delinsTG     | … >=1 nucleotides are replaced by >=1 other nucleotides and which is not a substitution, inversion, or conversion
+    | inv(ersion)	| g.495_499inv          | … more than 1 nucleotide replaces the original sequence and is the reverse-complement of the original sequence (e.g., CTCGA to TCGAG)
+    | dup(lication)	| g.3661_3706dup        | … a copy of >=1 nucleotides are inserted directly 3' of the original copy of that sequence
+    | con(version)	| g.333_590con1844_2101 | A specific type of deletion-insertion where a range of nucleotides replacing the original sequence are a copy of a sequence from another site in the genome
+
+    [1]: … "a change where in a specific sequence compared to the reference sequence"
+    [2]: > "Substitution"
+    [3]: indel "Deletion-insertion"
+    """
+
+    def hgvs_from_mut(
+        start: int, ref: Sequence, alt: Sequence, seqid: str, seqtype="g"
+    ):
+        """
+        I try to generate a hgvs record as a [vcf input](https://github.com/biocommons/hgvs/blob/83f297ddf10132f9a51b2163fa64b4204b40586f/misc/experimental/vcf-add-hgvs)
+        - a vcf.model._Record has this (pip install pyvcf):
+            ```python
+            _Record(
+                CHROM=chrom,
+                POS=pos,
+                REF=ref,
+                ALT=alt,
+                QUAL=qual,
+                FILTER=filt,
+                INFO=info,
+                FORMA=fmt,
+            )
+            self.start = self.POS - 1
+            #: zero-based, half-open end coordinate of ``REF``
+            self.end = self.start + len(self.REF)
+            ```
+        - and transfer from _Record to SequenceVariant:
+            ```python
+            ref = r.REF
+            alt = r.ALT[alt_index].sequence if r.ALT[alt_index] else ""
+            start = r.POS - 1
+            end = start + len(r.REF)
+            ac = chrome2seqid[r.CHROM]
+            ```
+        """
+        end = start + len(ref)
+        if ref == "" and alt != "":
+            # insertion
+            end += 1
+        else:
+            start += 1
+        # pfx = os.path.commonprefix([ref, alt])
+        # lp = len(pfx)
+        # if lp > 0:
+        #    ref = ref[lp:]
+        #    alt = alt[lp:]
+        #    start += lp
+        return sequencevariant.SequenceVariant(
+            seqid,  # ac  # pyright: ignore[reportCallIssue]
+            seqtype,  # type
+            posedit.PosEdit(  # posedit
+                location.Interval(  # pyright: ignore[reportCallIssue]
+                    location.SimplePosition(start),  # pyright: ignore[reportCallIssue]
+                    location.SimplePosition(end),  # pyright: ignore[reportCallIssue]
+                    False,  # uncertain
+                ),
+                edit.NARefAlt(
+                    ref or None, alt or None, False  # pyright: ignore[reportCallIssue]
+                ),
+            ),
+        )
+
+    IMPORT_AVAIL_HGVS = True
+except ImportError:  # pragma: no cover
+    IMPORT_AVAIL_HGVS = False

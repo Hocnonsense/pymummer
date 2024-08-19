@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-16 22:15:12
+ * @LastEditTime: 2024-08-19 00:29:10
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -13,6 +13,7 @@ from sys import stdout
 from typing import Iterable
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
+from Bio import SeqIO
 
 from .flatten import flatten2feat, try_get_cds_end
 from .alignment import AlignContig2, AlignRegion
@@ -197,20 +198,15 @@ def report_mut_feat_cds(
     ni = 0
     nj = 0
     flatten = d.flatten[this]
-    mut_translates = {
-        (seqid, str(feat.location)): (feat, seq2ar_rec)
-        for seqid, feat in feats
-        if (
-            seq2ar_rec := {
-                rec.seq: (ar, rec)
-                for ar, rec in flatten2feat(feat, flatten, d.seqs[this][seqid])
-            }
-        )
-        and not (
-            len(seq2ar_rec) == 1 and feat.extract(d.seqs[this][seqid].seq) in seq2ar_rec
-        )
-    }
-    for (seqid, loc), (feat, seq2ar_rec) in mut_translates.items():
+    for seqid, feat in feats:
+        seq2ar_rec = {
+            rec.seq: (ar, rec)
+            for ar, rec in flatten2feat(feat, flatten, d.seqs[this][seqid])
+        }
+        if not seq2ar_rec:
+            continue
+        if len(seq2ar_rec) == 1 and feat.extract(d.seqs[this][seqid].seq) in seq2ar_rec:
+            continue
         refcds: SeqRecord = feat.extract(  # pyright: ignore[reportAssignmentType]
             d.seqs[this][seqid]
         )
@@ -253,7 +249,7 @@ def report_mut_feat_cds(
             elif len(refcds) == len(rec):
                 write("SNP detected!")
                 ar_cds.contig.write_mask_regions([ar_cds], stdout)
-                if refaa == mut_translate.seq:
+                if refaa.seq == mut_translate.seq:
                     write("Synonymous mutation (silent)")
                 elif len(refaa) == len(mut_translate.seq):
                     write("Non-synonymous mutation (missense)!")
@@ -270,3 +266,92 @@ def report_mut_feat_cds(
                 ar_cds.contig.write_mask_regions([ar_cds], stdout)
                 ar_aa.contig.write_mask_regions([ar_aa], stdout)
                 write(f">{mutid} {desc}\n{new_rec.seq}")
+
+
+def report_mut_feat_cds2(
+    d: Delta,
+    feats: Iterable[tuple[str, SeqFeature]],
+    template: Pair.T = "ref",
+    stdtsv=stdout,
+    stdfna=stdout,
+):
+    assert d.seqs
+    writetsv = lambda *x: print(*x, sep="\t", file=stdtsv)
+    writetsv("#CHROM", "FEAT", "ALIGN", "TYPE", "HASREF", "HGVS_N", "HGVS_P", "MUTID")
+    writefa = lambda i, s: print(f">{i}\n{s}", file=stdfna)
+    this = template
+    other = Pair.switch(this)
+    ni = 0
+    nj = 0
+    flatten = d.flatten[this]
+    for seqid, feat in feats:
+        seq2ar_rec = {
+            rec.seq: (ar, rec)
+            for ar, rec in flatten2feat(feat, flatten, d.seqs[this][seqid])
+        }
+        if not seq2ar_rec:
+            continue
+        if len(seq2ar_rec) == 1 and feat.extract(d.seqs[this][seqid].seq) in seq2ar_rec:
+            continue
+        refcds: SeqRecord = feat.extract(  # pyright: ignore[reportAssignmentType]
+            d.seqs[this][seqid]
+        )
+        has_the_same = refcds.seq in seq2ar_rec
+        for ar, rec in seq2ar_rec.values():
+            assert ar.contig is not None
+            if rec.seq == refcds.seq:
+                continue
+            ni += 1
+            desc = ""
+            alnid = f"{ar.contig.seqid2[other]}-{ar}"
+            mutid = f"{feat.id}-{alnid}"
+            ar_cds = AlignContig2(
+                ("template transcript", "mutation"), (refcds, rec)
+            ).align()
+            mut_translate = rec.translate()
+            refaa = refcds.translate()
+            ar_aa = AlignContig2(
+                ("template protein", "mutation"), (refaa, mut_translate)
+            ).align()
+            _feat, new_rec = try_get_cds_end(
+                feat, flatten, d.seqs[this][seqid], {ar}, True
+            )
+            assert ar_cds.contig is not None and ar_aa.contig is not None
+            assert rec.seq is not None
+            mask_aa_hgvs = False
+            if len(rec.seq) % 3:
+                desc = "indel shift"
+                if "*" in mut_translate.seq[:-1]:
+                    desc += " early terminal"
+                elif "*" not in mut_translate.seq:
+                    desc += " late terminal"
+                if _feat == feat and "*" not in ar_aa.seq["query"]:
+                    desc += " (no stop codon)"
+                mask_aa_hgvs = True
+            elif len(refcds) == len(rec):
+                desc = "snp"
+                if refaa.seq == mut_translate.seq:
+                    desc += " (silent)"  # Synonymous mutation
+                elif len(refaa) == len(mut_translate.seq):
+                    desc += " (missense)"  # Non-synonymous mutation
+                    if ar_aa.seq and "*" in mut_translate.seq[:-1]:
+                        desc += " early terminal"
+                else:
+                    desc += " (nonsense)"  # Non-synonymous mutation
+            else:
+                desc = "indel (no shift)"
+            writetsv(
+                seqid,
+                feat.id,
+                alnid,
+                desc,
+                has_the_same,
+                " ".join(str(i) for i in ar_cds.hgvs("ref", "g", "@")),
+                (
+                    "---"
+                    if mask_aa_hgvs
+                    else " ".join(str(i) for i in ar_aa.hgvs("ref", "p", "@"))
+                ),
+                mutid,
+            )
+            writefa(f"{mutid} {desc}", f"{new_rec.seq}")

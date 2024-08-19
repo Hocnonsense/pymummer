@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 22:44:47
+ * @LastEditTime: 2024-08-18 22:40:53
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -17,6 +17,7 @@ from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
 
 from .pair import Pair, align_edlib
+from pymummer import pair
 
 
 class AlignContig2:
@@ -234,19 +235,19 @@ class AlignRegion:
         )
 
     @property
+    def HAS_SEQ(self):
+        return self.contig is not None
+
+    @property
     def region_len(self):
         return max(len(i) for i in self.loc2.values())
 
     @property
     @Pair
-    def seq(self, this: "Pair.T", other: "Pair.T") -> Seq | None:
-        if self.contig is not None:
-            seq = self.contig.seq2[this]
-            if seq is not None:
-                return self.loc2[this].extract(
-                    seq.seq
-                )  # pyright: ignore[reportReturnType]
-        return None  # pragma: no cover
+    def seq(self, this: "Pair.T", other: "Pair.T") -> Seq:
+        assert self.HAS_SEQ and self.contig is not None
+        seq = self.contig.seq2[this]
+        return self.loc2[this].extract(seq.seq)  # pyright: ignore[reportReturnType]
 
     @classmethod
     def _align_indel(cls, seq: Seq, inserts: Iterable[int]) -> Seq:
@@ -270,9 +271,7 @@ class AlignRegion:
     @Pair
     def seq_align(self, this: "Pair.T", other: "Pair.T"):
         seq = self.seq[this]
-        if seq is not None:
-            return self._align_indel(seq, self.feat2[this].qualifiers["ins"])
-        return None  # pragma: no cover
+        return self._align_indel(seq, self.feat2[this].qualifiers["ins"])
 
     @classmethod
     def pair2align(cls, ref, query):
@@ -298,8 +297,6 @@ class AlignRegion:
     @Pair
     def alignment2(self, this: "Pair.T", other: "Pair.T"):
         ref, query = self.seq_align[this], self.seq_align[other]
-        if ref is None or query is None:
-            return None  # pragma: no cover
         return self.pair2align(ref, query)
 
     @property
@@ -353,13 +350,64 @@ class AlignRegion:
     @Pair
     def diff2(self, this: "Pair.T", other: "Pair.T"):
         ref, query = self.seq_align[this], self.seq_align[other]
-        if ref is None or query is None:
-            return None  # pragma: no cover
         return self.pair2diff(ref, query)
 
     @property
     def diff(self):
         return self.diff2["ref"]
+
+    @classmethod
+    def diff2vcf(cls, ref, query):
+        """
+        Unluckly, indel may not be identified by this method.
+
+        >>> # AB-D
+        >>> # ||+|
+        >>> # ABCD
+        >>> list(AlignRegion.diff2vcf("AB-D", "ABCD"))
+        [(2, '', 'C')]
+        >>> # AB-DFGH
+        >>> # ||+|E|-
+        >>> # ABCDEG-
+        >>> list(AlignRegion.diff2vcf("AB-DFGH", "ABCDEG-"))
+        [(2, '', 'C'), (4, 'F', 'E'), (6, 'H', '')]
+        >>> list(AlignRegion.diff2vcf("AB-", "ABC"))
+        [(2, '', 'C')]
+        """
+        ref, query = str(ref), str(query)
+        assert len(ref.replace("-", "")) > 0, f"empty {ref = }"
+        align = cls.pair2align(ref, query)
+        _ref = _alt = ""
+        index, _i = 0, -1
+        for base_ref, base_align, base_query in zip(ref, align, query):
+            if base_ref != "-":
+                index += 1
+            if base_align == "|":
+                if _ref or _alt:
+                    yield _i, _ref, _alt
+                    _ref = _alt = ""
+                    _i = -1
+            else:
+                if _i == -1:
+                    _i = index
+                if base_ref != "-":
+                    _ref += base_ref
+                if base_query != "-":
+                    _alt += base_query
+        if _ref or _alt:
+            yield _i, _ref, _alt
+
+    def hgvs(self, this: "Pair.T", seqtype="g", seqid: str | None = None):
+        assert pair.IMPORT_AVAIL_HGVS
+        if seqid is None:
+            assert self.contig
+            seqid = self.contig.seqid2[this]
+        other = Pair.switch(this)
+        ref, query = self.seq_align[this], self.seq_align[other]
+        return [
+            pair.hgvs_from_mut(s, r, l, seqid, seqtype=seqtype)
+            for s, r, l in self.diff2vcf(ref, query)
+        ]
 
     @classmethod
     def mask_muts(cls, alignment: str, n_wing=5, min_mask=10):

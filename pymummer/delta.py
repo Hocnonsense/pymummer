@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 22:45:13
+ * @LastEditTime: 2024-08-19 10:30:28
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -33,8 +33,8 @@ class Delta:
             self.pairs = [
                 DeltaContig2.from_delta(i, self) for i in self._group_regions(fi)
             ]
-        self.seqs = (
-            None
+        self.seqs: Pair[dict[str, SeqRecord]] = (
+            None  # type: ignore[assignment]
             if cache_fa is None
             else Pair(
                 {
@@ -134,7 +134,6 @@ class Delta:
     @property
     @Pair
     def flatten(self, this: Pair.T, other: Pair.T):
-        assert self.seqs is not None
         flatten_align: dict[str, list[list[tuple[DeltaRegion, str]]]] = {
             s: [[] for i in range(len(q))] for s, q in self.seqs[this].items()
         }
@@ -175,14 +174,18 @@ class DeltaContig2(AlignContig2):
         ref_len, query_len = seqlens
         self.seqid2 = Pair({"ref": ref_id, "query": query_id})
         self.seqrecordlen = Pair({"ref": ref_len, "query": query_len})
-        self.delta = delta
+        self.delta: Delta = delta  # type: ignore[assignment]
         self.alignregions: list[  # pyright: ignore[reportIncompatibleVariableOverride]
             DeltaRegion
         ] = []  # type: ignore[assignment]
         self.alignments_alter: list[DeltaRegion] = []
 
+    @property
+    def HAS_SEQ(self):
+        return self.delta is not None and self.delta.seqs is not None
+
     @classmethod
-    def from_delta(cls, lines: list[str], delta: Delta | None = None):
+    def from_delta(cls, lines: list[str], delta: Delta):
         headline, *alignment = lines
         ref_id, query_id, _ref_len, _query_len = headline[1:].strip().split()
         self = cls((ref_id, query_id), (int(_ref_len), int(_query_len)), delta)
@@ -194,9 +197,8 @@ class DeltaContig2(AlignContig2):
     @property
     @Pair
     def seq2(self, this: "Pair.T", other: "Pair.T"):
-        if self.delta and self.delta.seqs:
-            return self.delta.seqs[this][self.seqid2[this]]
-        return None
+        assert self.HAS_SEQ
+        return self.delta.seqs[this][self.seqid2[this]]
 
     @classmethod
     def _get_region_class(cls):

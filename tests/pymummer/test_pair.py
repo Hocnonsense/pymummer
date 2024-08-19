@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 16:13:55
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-11 22:09:25
+ * @LastEditTime: 2024-08-18 22:08:49
  * @FilePath: /pymummer/tests/pymummer/test_pair.py
  * @Description:
 """
@@ -45,13 +45,22 @@ def test_pair_decorator():
 
 
 def test_align_edlib():
-    from pymummer.pair import align_edlib
-
-    assert align_edlib("ABD", "ABCD") == ([-3], 1)
+    if not pair.IMPORT_AVAIL_EDLIB:  # pragma: no cover
+        return
+    assert pair.align_edlib("ABD", "ABCD") == ([-3], 1)
     # {'editDistance': 1, 'alphabetLength': 4, 'locations': [(0, 3)], 'cigar': '2=1D1='}
-    assert align_edlib("ABCD", "ABD") == ([3], 1)
+    assert pair.align_edlib("ABCD", "ABD") == ([3], 1)
     # {'editDistance': 1, 'alphabetLength': 4, 'locations': [(0, 2)], 'cigar': '2=1I1='}
-    assert align_edlib(
+    assert pair.align_edlib(
         "AAAAABCCCCDDDEEE",
         "AAAAABKKKBCCCEEE",
     ) == ([-8, -1, -1, 4, 1, 1], 7)
+
+
+def test_hgvs_from_mut():
+    if not pair.IMPORT_AVAIL_HGVS:  # pragma: no cover
+        return
+    h = pair.hgvs_from_mut(1, "A", "T", "genexx.1")
+    assert str(h) == "genexx.1:g.2A>T"
+    h = pair.hgvs_from_mut(63, "YI", "S", "protxx.1", "p")
+    assert str(h) == "protxx.1:p.64_65delinsS"
