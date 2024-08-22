@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:20:33
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-16 22:04:56
+ * @LastEditTime: 2024-08-22 16:53:04
  * @FilePath: /pymummer/pymummer/flatten.py
  * @Description:
 """
@@ -179,7 +179,6 @@ def try_get_cds_end(
                 id=feat.id,
                 qualifiers=feat.qualifiers.copy(),
             )
-        print(repr(new_feat))
         processed = False
         for _ar, new_rec in flatten2feat(
             new_feat, flatten_align, rec, circular or None, ars
@@ -231,13 +230,27 @@ def report_flatten_diff(
     write = lambda *x: print(*x, sep="\t", file=stdout)
     write("#" + ">SeqID")
     write("#" + "loc", "n_identical", "n_diff", "min_diff", "*aligns")
-    this: Pair.T = "ref"
+    # detect which is this
     for s in flatten_align:
-        contig = flatten_align[s][0][0][0].contig
-        if contig is not None and contig.seqid2["query"] == s:
-            this = "query"
+        for d in flatten_align[s]:
+            for ar, sc in d:
+                if ar.contig is not None:
+                    this: Pair.T
+                    for this in Pair.ENUM:  # type: ignore[assignment]
+                        if ar.contig.seqid2[this] == s:
+                            break
+                    else:  # pragma: no cover
+                        assert not "Unknown seqid neither in ref nor query"
+                break
+            else:  # pragma: no cover
+                continue
+            break
+        else:  # pragma: no cover
+            continue
         break
-    other = Pair.switch(this)
+    else:  # pragma: no cover
+        assert not "Blank flatten_align"
+    other = Pair.switch(this)  # pyright: ignore[reportPossiblyUnboundVariable]
     for s in flatten_align:
         write(f">{s}")
         d10_used = {i: True for i in range(n_window)}
