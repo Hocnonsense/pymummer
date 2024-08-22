@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 14:35:01
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 16:02:47
+ * @LastEditTime: 2024-08-15 22:23:24
  * @FilePath: /pymummer/tests/pymummer/test_delta.py
  * @Description:
 """
@@ -47,7 +47,7 @@ def test_make_delta(test_temp: Path):
 def test_load_delta():
     d = delta.Delta(delta_file)
     assert d.seqs is None
-    cache = {}
+    cache: dict = {}
     d = delta.Delta(delta_file, cache)
     assert len(cache) == 2
     d.pairs[0].seq2["ref"]
@@ -80,13 +80,13 @@ def test_delta_str():
         ]
 
 
-def test_delta_flattern():
+def test_delta_flatten():
     d = delta.Delta(delta_file, {})
-    flattern_align = d.flattern["query"]
+    flatten_align = d.flatten["query"]
     assert {1: 2558, 0: 843, 2: 228} == Counter(
-        len(i) for i in flattern_align["NZ_CP008888.1"]
+        len(i) for i in flatten_align["NZ_CP008888.1"]
     )
-    assert {k: Counter(len(i) for i in v) for k, v in d.flattern["ref"].items()} == {
+    assert {k: Counter(len(i) for i in v) for k, v in d.flatten["ref"].items()} == {
         "NODE_1564_length_766_cov_111365.326301": {1: 725, 2: 41},
         "NODE_1652_length_710_cov_139106.876336": {1: 709, 0: 1},
         "NODE_733_length_1545_cov_136201.359060": {1: 1497, 0: 48},

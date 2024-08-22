@@ -2,19 +2,24 @@
 """
  * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 13:14:29
+ * @LastEditTime: 2024-08-18 22:47:31
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
  * @Description:
 """
 # """
 
-from tests import Path, temp_output, test_files, test_temp
-
+import pytest
 from Bio.Seq import Seq
 from Bio.SeqFeature import SimpleLocation
+
+with pytest.warns(DeprecationWarning, match="pkg_resources is deprecated as an API."):
+    from pymummer import pair
+from pymummer import alignment, pair
+
 from Bio.SeqRecord import SeqRecord
 
-from pymummer import alignment
+
+from tests import Path, temp_output, test_files, test_temp
 
 
 def test_doc():
@@ -47,6 +52,20 @@ def test_align_contig2():
     assert ar2.alignment is not None
     assert "-||+|||-||||" == ar1.alignment == ar3.alignment
     assert "-|+||||-||||" == ar2.alignment[::-1]
-    assert ["-", "|", "|", "g+|", "|", "|", "-", "|", "|", "|", "|"] == list(
-        ar1.diff or ()
-    )
+    diff = list(ar1.diff)
+    assert ["-", "|", "|", "g+|", "|", "|", "-", "|", "|", "|", "|"] == diff
+    assert "".join(
+        [
+            bdiff.replace("-", "").replace("+", "").replace("|", bref)
+            for bref, bdiff in zip(str(ar1.seq["ref"]), ar1.diff2["ref"])
+        ]
+    ) == str(ar1.seq["query"])
+
+
+def test_hgvs():
+    if not pair.IMPORT_AVAIL_HGVS:
+        return
+    ac, ar1 = _make_example()
+    assert ["test1:g.2del", "test1:g.3_4insg", "test1:g.8del"] == [
+        str(i) for i in ar1.hgvs("ref", "g")
+    ]

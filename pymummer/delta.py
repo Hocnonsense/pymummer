@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-14 21:45:22
+ * @LastEditTime: 2024-08-19 10:30:28
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -12,11 +12,12 @@
 import os
 from pathlib import Path
 from sys import stdout
-from typing import Literal, TextIO, overload
+from typing import Literal, Sequence, TextIO, overload
 
 from Bio import SeqFeature, SeqIO
 
 from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation
+from . import flatten
 from .pair import Pair
 
 
@@ -32,15 +33,16 @@ class Delta:
             self.pairs = [
                 DeltaContig2.from_delta(i, self) for i in self._group_regions(fi)
             ]
-        if cache_fa is not None:
-            self.seqs = Pair(
+        self.seqs: Pair[dict[str, SeqRecord]] = (
+            None  # type: ignore[assignment]
+            if cache_fa is None
+            else Pair(
                 {
                     "ref": self._update_cache_fa(str(self.ref), cache_fa),
                     "query": self._update_cache_fa(str(self.query), cache_fa),
                 }
             )
-        else:
-            self.seqs = None
+        )
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}[{self.alignment_type}({self.ref.stem}, {self.query.stem})"
@@ -131,39 +133,27 @@ class Delta:
 
     @property
     @Pair
-    def flattern(self, this: Pair.T, other: Pair.T):
-        assert self.seqs is not None
-        flattern_align: dict[str, list[list[tuple[DeltaRegion, str]]]] = {
+    def flatten(self, this: Pair.T, other: Pair.T):
+        flatten_align: dict[str, list[list[tuple[DeltaRegion, str]]]] = {
             s: [[] for i in range(len(q))] for s, q in self.seqs[this].items()
         }
-        for g in self.pairs:
-            for i in g.alignregions:
-                ref, query = i.seq_align[other], i.seq_align[this]
-                assert ref is not None and query is not None
-                if i.loc2[this].strand == "-":  # pragma: no cover
-                    # reverse back
-                    ref = ref.reverse_complement()
-                    query = query.reverse_complement()
-                for align_base in enumerate(
-                    i.pair2diff(query, ref),
-                    i.loc2[this].start - 1,  # pyright: ignore[reportOperatorIssue]
-                ):
-                    assert i.contig is not None
-                    flattern_align[i.contig.seqid2[this]][align_base[0]].append(
-                        (i, align_base[1])
-                    )
-        return flattern_align
+        flatten.flatten(
+            self.pairs, this, flatten_align
+        )  # pyright: ignore[reportArgumentType]
+        return flatten_align
 
     @overload
     @classmethod
     def run_nucmer(
         cls, ref: Path, query: Path, outprefix: Path, load: Literal[False]
     ) -> Path: ...
+
     @overload
     @classmethod
     def run_nucmer(
         cls, ref: Path, query: Path, outprefix: Path, load: Literal[True] = True
     ) -> "Delta": ...
+
     @classmethod
     def run_nucmer(cls, ref: Path, query: Path, outprefix: Path, load=True):
         os.system(f"nucmer {ref} {query} -p {outprefix}")
@@ -184,14 +174,18 @@ class DeltaContig2(AlignContig2):
         ref_len, query_len = seqlens
         self.seqid2 = Pair({"ref": ref_id, "query": query_id})
         self.seqrecordlen = Pair({"ref": ref_len, "query": query_len})
-        self.delta = delta
+        self.delta: Delta = delta  # type: ignore[assignment]
         self.alignregions: list[  # pyright: ignore[reportIncompatibleVariableOverride]
             DeltaRegion
-        ] = []
+        ] = []  # type: ignore[assignment]
         self.alignments_alter: list[DeltaRegion] = []
 
+    @property
+    def HAS_SEQ(self):
+        return self.delta is not None and self.delta.seqs is not None
+
     @classmethod
-    def from_delta(cls, lines: list[str], delta: Delta | None = None):
+    def from_delta(cls, lines: list[str], delta: Delta):
         headline, *alignment = lines
         ref_id, query_id, _ref_len, _query_len = headline[1:].strip().split()
         self = cls((ref_id, query_id), (int(_ref_len), int(_query_len)), delta)
@@ -203,9 +197,8 @@ class DeltaContig2(AlignContig2):
     @property
     @Pair
     def seq2(self, this: "Pair.T", other: "Pair.T"):
-        if self.delta and self.delta.seqs:
-            return self.delta.seqs[this][self.seqid2[this]]
-        return None
+        assert self.HAS_SEQ
+        return self.delta.seqs[this][self.seqid2[this]]
 
     @classmethod
     def _get_region_class(cls):
@@ -246,91 +239,14 @@ class DeltaContig2(AlignContig2):
             if len(aln) > 1:
                 yield aln
 
-    def mask_twin_same(self, target: Pair.T, aln: list["DeltaRegion"] | None = None):
+    def mask_twin_same(
+        self, target: Pair.T, aln: Sequence["AlignRegion | DeltaRegion"] | None = None
+    ):
         if aln is None:
-            for aln in self.dup_dels:
+            for aln in self.dup_dels:  # pyright: ignore[reportAssignmentType]
                 break
-            else:
-                return
-        this = target
-        other = Pair.switch(this)
-        _alignment, *_alignments = [i.alignment2[this] for i in aln]
-        assert _alignment is not None
-        _alignment1 = _alignment.replace("+", "*").replace("-", "/")
-        for _alignment2 in _alignments:
-            assert _alignment2 is not None
-            _alignment1 = (
-                aln[0]
-                .pair2align(
-                    _alignment1.replace("|", "!"), _alignment2.replace("|", "!")
-                )
-                .replace("!", "+")
-                .replace("+", "*")
-                .replace("-", "/")
-            )
-        last_char = None
-        start_i = 0
-        align_regions: list[tuple[int, int]] = []
-        aln_i = (0, "")
-        for aln_i in enumerate(_alignment1):
-            if aln_i[1] == "|":
-                if last_char != "|":
-                    start_i = aln_i[0]
-            elif last_char == "|":
-                if start_i != 0:
-                    start_i += 5
-                if aln_i[0] - start_i > 15:
-                    align_regions.append((start_i, aln_i[0] - 5))
-            last_char = aln_i[1]
-        if last_char == "|":
-            if start_i != 0:
-                start_i += 5
-            if aln_i[0] - start_i > 10:
-                align_regions.append((start_i, aln_i[0] + 1))
-        for i in aln:
-            other_align, alignment, this_align = (
-                i.seq_align[other],
-                i.alignment,
-                i.seq_align[this],
-            )
-            assert other_align is not None
-            assert alignment is not None
-            assert this_align is not None
-            for start, end in reversed(align_regions):
-                align_mask_str = f" {end-start:^8} "
-                if len(align_mask_str) == 8:
-                    ref_mask_str = f"[ masked ]"
-                    query_mask_str = f"[bp same ]"
-                else:
-                    ref_mask_str = "[{k:^{v}}]".format(
-                        k="masked", v=len(align_mask_str) - 2
-                    )
-                    query_mask_str = "[{k:^{v}}]".format(
-                        k="bp same", v=len(align_mask_str) - 2
-                    )
-                alignment = alignment[:start] + align_mask_str + alignment[end:]
-                this_align = this_align[:start] + ref_mask_str + this_align[end:]
-                other_align = other_align[:start] + query_mask_str + other_align[end:]
-            yield i, this_align, alignment, other_align
-
-    def write_mask_regions(self, alignregions: list["DeltaRegion"], stdout=stdout):
-        write = lambda *x: print(*x, file=stdout)
-        this = "ref"
-        other = Pair.switch(this)
-        _other_align = ""
-        _i = None
-        for _i, _q, _a, _r in self.mask_twin_same(this, alignregions):
-            if not _other_align:
-                write(_q, self.seqid2[this], _i.loc2[this])
-            write(
-                _a,
-                len(_i.feat2["ref"].qualifiers["ins"]),
-                ":",
-                -len(_i.feat2["query"].qualifiers["ins"]),
-            )
-            _other_align = _r
-        assert _i is not None, f"empty {alignregions = }"
-        write(_other_align, self.seqid2[other], _i.loc2[other])
+        assert aln is not None, "No proper aln found"
+        return super().mask_twin_same(target, aln)
 
 
 class DeltaRegion(AlignRegion):
