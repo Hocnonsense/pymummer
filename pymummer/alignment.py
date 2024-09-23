@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-18 22:40:53
+ * @LastEditTime: 2024-09-23 09:59:16
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -29,8 +29,12 @@ class AlignContig2:
         ref_id, query_id = seqids
         ref_seq, query_seq = seqs
         self.seqid2 = Pair({"ref": ref_id, "query": query_id})
-        self.seq2 = Pair({"ref": ref_seq, "query": query_seq})
+        self.__seq2 = Pair({"ref": ref_seq, "query": query_seq})
         self.alignregions: list[AlignRegion] = []
+
+    @property
+    def seq2(self):
+        return self.__seq2
 
     @property
     def alignregion(self):
