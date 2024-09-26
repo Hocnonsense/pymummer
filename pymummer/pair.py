@@ -33,17 +33,15 @@ class Pair(Generic[FT]):
     @overload
     def __init__(self, f: dict[T, FT]): ...
 
-    def __init__(
-        self, f: Callable[[CLS, T, T], FT] | dict[T, FT], cls: CLS | None = None
-    ):
+    def __init__(self, f: Callable[[CLS, T, T], FT] | dict[T, FT]):
         if isinstance(f, dict):
             self._d = f
         else:
             self._f = f
-        self.cls = cls
+        self.inst: CLS | None = None
 
-    def __call__(self, cls):
-        self.cls = cls
+    def __call__(self, inst):
+        self.inst = inst
         return self
 
     ENUM: Final[tuple[Literal["ref"], Literal["query"]]] = T.__args__  # type: ignore
@@ -57,9 +55,9 @@ class Pair(Generic[FT]):
         raise KeyError(f'"{this}" not in switch')
 
     def __getitem__(self, this: T):
-        if self.cls is None:
+        if self.inst is None:
             return self._d[this]
-        return self._f(self.cls, this, self.switch(this))
+        return self._f(self.inst, this, self.switch(this))
 
     @property
     def ref(self):

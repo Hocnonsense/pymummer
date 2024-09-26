@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-19 10:30:28
+ * @LastEditTime: 2024-09-25 10:16:50
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -196,7 +196,9 @@ class DeltaContig2(AlignContig2):
 
     @property
     @Pair
-    def seq2(self, this: "Pair.T", other: "Pair.T"):
+    def seq2(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self, this: "Pair.T", other: "Pair.T"
+    ):
         assert self.HAS_SEQ
         return self.delta.seqs[this][self.seqid2[this]]
 
