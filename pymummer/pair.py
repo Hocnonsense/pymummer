@@ -33,12 +33,14 @@ class Pair(Generic[FT]):
     @overload
     def __init__(self, f: dict[T, FT]): ...
 
-    def __init__(self, f: Callable[[CLS, T, T], FT] | dict[T, FT]):
+    def __init__(
+        self, f: Callable[[CLS, T, T], FT] | dict[T, FT], inst: CLS | None = None
+    ):
         if isinstance(f, dict):
             self._d = f
         else:
             self._f = f
-        self.inst: CLS | None = None
+        self.inst = inst
 
     def __call__(self, inst):
         self.inst = inst
