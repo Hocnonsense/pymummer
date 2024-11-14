@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:20:33
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-22 16:53:04
+ * @LastEditTime: 2024-09-29 17:00:57
  * @FilePath: /pymummer/pymummer/flatten.py
  * @Description:
 """
@@ -231,11 +231,11 @@ def report_flatten_diff(
     write("#" + ">SeqID")
     write("#" + "loc", "n_identical", "n_diff", "min_diff", "*aligns")
     # detect which is this
+    this: Pair.T
     for s in flatten_align:
         for d in flatten_align[s]:
             for ar, sc in d:
                 if ar.contig is not None:
-                    this: Pair.T
                     for this in Pair.ENUM:  # type: ignore[assignment]
                         if ar.contig.seqid2[this] == s:
                             break
@@ -300,4 +300,4 @@ def report_flatten_diff(
                         last_miss = -1
                     write(*d10[shift][:-1], *d10[shift][-1])
         if last_miss != -1:
-            write(f"{last_miss}...{basei}", 0, basei - last_miss + 1)
+            write(f"# {last_miss}...{basei}", 0, basei - last_miss + 1)
