@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:20:33
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-09-29 17:00:57
+ * @LastEditTime: 2024-11-14 17:35:39
  * @FilePath: /pymummer/pymummer/flatten.py
  * @Description:
 """
@@ -293,7 +293,7 @@ def report_flatten_diff(
                         continue
                     if last_miss != -1:
                         write(
-                            f"{last_miss}...{d10[shift][0]-1}",
+                            f"# {last_miss}...{d10[shift][0]-1}",
                             0,
                             d10[shift][0] - last_miss,
                         )
