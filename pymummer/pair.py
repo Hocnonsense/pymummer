@@ -154,7 +154,7 @@ try:
     | ins(ertion)	| g.7339_7340insTAGG    | … >=1 nucleotides are inserted in a sequence and where the insertion is not a copy of a sequence immediately 5'
     | [indel][3]    | g.112_117delinsTG     | … >=1 nucleotides are replaced by >=1 other nucleotides and which is not a substitution, inversion, or conversion
     | inv(ersion)	| g.495_499inv          | … more than 1 nucleotide replaces the original sequence and is the reverse-complement of the original sequence (e.g., CTCGA to TCGAG)
-    | dup(lication)	| g.3661_3706dup        | … a copy of >=1 nucleotides are inserted directly 3' of the original copy of that sequence
+    | dup(location)	| g.3661_3706dup        | … a copy of >=1 nucleotides are inserted directly 3' of the original copy of that sequence
     | con(version)	| g.333_590con1844_2101 | A specific type of deletion-insertion where a range of nucleotides replacing the original sequence are a copy of a sequence from another site in the genome
 
     [1]: … "a change where in a specific sequence compared to the reference sequence"

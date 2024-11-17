@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-09-23 09:59:16
+ * @LastEditTime: 2024-11-17 15:25:55
  * @FilePath: /pymummer/pymummer/alignment.py
  * @Description:
 """
@@ -102,13 +102,13 @@ class AlignContig2:
         if align_method == "edlib":
             ref_seq = loc_ref.extract(self.seq2["ref"].seq)
             query_seq = loc_query.extract(self.seq2["query"].seq)
-            aln, mis = align_edlib(ref_seq, query_seq)
+            alnm, mism = align_edlib(ref_seq, query_seq)
         else:
             raise NotImplementedError(
                 f"not implied {align_method = }"
             )  # pragma: no cover
         # return AlignRegion
-        return self.region_class((loc_ref, loc_query), aln, mis, self)
+        return self.region_class((loc_ref, loc_query), alnm, mism, self)
 
     @classmethod
     def _get_region_class(cls):
@@ -348,7 +348,7 @@ class AlignRegion:
                 else:
                     yield ins + base_query
                 ins = ""
-        assert not ins, "unexpect base left "
+        assert not ins, "unexpected base left "
 
     @property
     @Pair

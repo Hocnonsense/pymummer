@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-19 00:29:10
+ * @LastEditTime: 2024-11-17 15:25:14
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -133,7 +133,7 @@ def report_indel_looong(
                 i_merged = g1[0]
                 for i in g1[1:]:
                     i_merged = i_merged.merge(i)
-                # i in g1 should not be redundant -- at least 50? 80? differnt area
+                # i in g1 should not be redundant -- at least 50? 80? different area
                 if len(i_merged.loc2[this]) < min(len(i.loc2[this]) for i in g1) * 1.5:
                     # please, not simply overlap
                     for i in g1:

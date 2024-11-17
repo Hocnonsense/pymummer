@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:20:33
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-11-14 17:35:39
+ * @LastEditTime: 2024-11-17 15:24:48
  * @FilePath: /pymummer/pymummer/flatten.py
  * @Description:
 """
@@ -120,7 +120,7 @@ def flatten2feat(
         for ar in ar2start_end:
             if len(ar2start_end[ar]) % 2:
                 ar2rec[ar] += refbase
-                "disabled as no alignmnet"
+                "disabled as no alignment"
             elif ar2start_end[ar][-1] == -1:
                 ar2start_end[ar][-1] = len(ar2rec[ar])
             else:
