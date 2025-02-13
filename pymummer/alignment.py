@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-11 17:37:59
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-13 10:50:27
-* @FilePath: /pymummer/pymummer/alignment.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-13 11:15:33
+ * @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
 # """
@@ -275,7 +275,7 @@ class AlignRegion:
         """
         >>> AlignRegion._align_indel("acgtagctgag", [4])
         'acg-tagctgag'
-        >>> AlignRegion._align_indel("ABD", [3])
+        >>> AlignRegion._align_indel("ABD", [3]) # codespell:ignore
         'AB-D'
         """
         prev = 0

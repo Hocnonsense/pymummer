@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-11 16:13:55
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2024-08-18 22:08:49
-* @FilePath: /pymummer/tests/pymummer/test_pair.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-13 11:16:26
+ * @FilePath: /pymummer/tests/pymummer/test_pair.py
 * @Description:
 """
 # """
@@ -47,9 +47,9 @@ def test_pair_decorator():
 def test_align_edlib():
     if not pair.IMPORT_AVAIL_EDLIB:  # pragma: no cover
         return
-    assert pair.align_edlib("ABD", "ABCD") == ([-3], 1)
+    assert pair.align_edlib("ABD", "ABCD") == ([-3], 1)  # codespell:ignore
     # {'editDistance': 1, 'alphabetLength': 4, 'locations': [(0, 3)], 'cigar': '2=1D1='}
-    assert pair.align_edlib("ABCD", "ABD") == ([3], 1)
+    assert pair.align_edlib("ABCD", "ABD") == ([3], 1)  # codespell:ignore
     # {'editDistance': 1, 'alphabetLength': 4, 'locations': [(0, 2)], 'cigar': '2=1I1='}
     assert pair.align_edlib(
         "AAAAABCCCCDDDEEE",
