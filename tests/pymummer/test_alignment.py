@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-11 21:02:48
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-13 10:48:55
-* @FilePath: /pymummer/tests/pymummer/test_alignment.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-13 11:18:37
+ * @FilePath: /pymummer/tests/pymummer/test_alignment.py
 * @Description:
 """
 # """
@@ -12,8 +12,6 @@ import pytest
 from Bio.Seq import Seq
 from Bio.SeqFeature import SimpleLocation
 
-with pytest.warns(DeprecationWarning, match="pkg_resources is deprecated as an API."):
-    from pymummer import pair
 from pymummer import alignment, pair
 
 from Bio.SeqRecord import SeqRecord
