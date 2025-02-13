@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 """
- * @Date: 2023-10-22 20:59:23
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-11 16:29:19
- * @FilePath: /pymummer/tests/__init__.py
- * @Description:
+* @Date: 2023-10-22 20:59:23
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2024-08-11 16:29:19
+* @FilePath: /pymummer/tests/__init__.py
+* @Description:
 
- python -m pytest -vv
+python -m pytest -vv
 
- $ pip install pytest-cov
- python -m pytest -vv --cov --cov-report=html
+$ pip install pytest-cov
+python -m pytest -vv --cov --cov-report=html
 """
 # """
 

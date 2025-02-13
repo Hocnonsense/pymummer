@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
- * @Date: 2024-08-08 20:18:28
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-13 10:03:42
- * @FilePath: /pymummer/pymummer/delta.py
- * @Description:
+* @Date: 2024-08-08 20:18:28
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2025-02-13 10:03:42
+* @FilePath: /pymummer/pymummer/delta.py
+* @Description:
 """
 # """
 

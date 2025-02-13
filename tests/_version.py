@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 """
- * @Date: 2024-04-22 11:27:00
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 12:57:33
- * @FilePath: /pymummer/tests/_version.py
- * @Description: Git implementation of _version.py.
+* @Date: 2024-04-22 11:27:00
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2024-08-12 12:57:33
+* @FilePath: /pymummer/tests/_version.py
+* @Description: Git implementation of _version.py.
 
- This file helps to compute a version number in source trees obtained from
- git-archive tarball (such as those provided by githubs download-from-tag
- feature). Distribution tarballs (built by setup.py sdist) and build
- directories (produced by setup.py build) will contain a much shorter file
- that just contains the computed version number.
+This file helps to compute a version number in source trees obtained from
+git-archive tarball (such as those provided by githubs download-from-tag
+feature). Distribution tarballs (built by setup.py sdist) and build
+directories (produced by setup.py build) will contain a much shorter file
+that just contains the computed version number.
 
- This file is released into the public domain.
- Modified from versioneer-0.28
- https://github.com/python-versioneer/python-versioneer
+This file is released into the public domain.
+Modified from versioneer-0.28
+https://github.com/python-versioneer/python-versioneer
 """
 # """
 

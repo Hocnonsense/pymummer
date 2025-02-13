@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
- * @Date: 2024-08-15 18:20:33
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-12 17:30:40
- * @FilePath: /pymummer/pymummer/flatten.py
- * @Description:
+* @Date: 2024-08-15 18:20:33
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2025-02-12 17:30:40
+* @FilePath: /pymummer/pymummer/flatten.py
+* @Description:
 """
 
 from typing import Collection, Iterable, TypeVar, overload

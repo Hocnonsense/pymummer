@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
- * @Date: 2022-10-13 09:49:04
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-12 13:12:52
- * @FilePath: /pymummer/tests/setup.py
- * @Description:
+* @Date: 2022-10-13 09:49:04
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2024-08-12 13:12:52
+* @FilePath: /pymummer/tests/setup.py
+* @Description:
 """
 
 import os

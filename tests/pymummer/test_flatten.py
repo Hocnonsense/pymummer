@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
- * @Date: 2024-08-15 18:24:56
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-13 10:49:31
- * @FilePath: /pymummer/tests/pymummer/test_flatten.py
- * @Description:
+* @Date: 2024-08-15 18:24:56
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2025-02-13 10:49:31
+* @FilePath: /pymummer/tests/pymummer/test_flatten.py
+* @Description:
 """
 # """
 
