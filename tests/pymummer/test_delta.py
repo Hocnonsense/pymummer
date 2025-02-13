@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 14:35:01
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-15 22:23:24
+ * @LastEditTime: 2025-02-13 10:59:12
  * @FilePath: /pymummer/tests/pymummer/test_delta.py
  * @Description:
 """
@@ -70,7 +70,7 @@ def test_delta_str():
             print(i, file=buf)
         buf.seek(0)
         assert buf.readlines() == [
-            "Delta[NUCMER(MarsFilter2-sub, A501-plasmid)\n",
+            "Delta[NUCMER(MarsFilter2-sub, A501-plasmid)]\n",
             "DeltaContig2(NODE_1564_length_766_cov_111365.326301[0:238](+), NZ_CP008888.1[3367:3605](-) ..1)\n",
             "DeltaRegion([0:238](+)~[3367:3605](-), 238bp-6)\n",
             "DeltaContig2(NODE_1652_length_710_cov_139106.876336[1:710](+), NZ_CP008888.1[1442:2151](-))\n",

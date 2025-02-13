@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:20:33
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-11-17 15:24:48
+ * @LastEditTime: 2025-02-12 17:30:40
  * @FilePath: /pymummer/pymummer/flatten.py
  * @Description:
 """
@@ -220,6 +220,19 @@ def report_flatten_cov(
     )
 
 
+def check_flattern_this(flatten_align: dict[str, list[list[tuple[TRegion, str]]]]):
+    for s in flatten_align:
+        for d in flatten_align[s]:
+            for ar, sc in d:
+                if ar.contig is not None:
+                    for this in Pair.ENUM:
+                        if ar.contig.seqid2[this] == s:
+                            return this
+                    # pragma: no cover
+                    assert not "Unknown seqid neither in ref nor query"
+    raise NotImplementedError("Blank flatten_align")  # pragma: no cover
+
+
 def report_flatten_diff(
     flatten_align: dict[str, list[list[tuple[TRegion, str]]]],
     n_window=10,
@@ -231,26 +244,8 @@ def report_flatten_diff(
     write("#" + ">SeqID")
     write("#" + "loc", "n_identical", "n_diff", "min_diff", "*aligns")
     # detect which is this
-    this: Pair.T
-    for s in flatten_align:
-        for d in flatten_align[s]:
-            for ar, sc in d:
-                if ar.contig is not None:
-                    for this in Pair.ENUM:  # type: ignore[assignment]
-                        if ar.contig.seqid2[this] == s:
-                            break
-                    else:  # pragma: no cover
-                        assert not "Unknown seqid neither in ref nor query"
-                break
-            else:  # pragma: no cover
-                continue
-            break
-        else:  # pragma: no cover
-            continue
-        break
-    else:  # pragma: no cover
-        assert not "Blank flatten_align"
-    other = Pair.switch(this)  # pyright: ignore[reportPossiblyUnboundVariable]
+    this = check_flattern_this(flatten_align)
+    other = Pair.switch(this)
     for s in flatten_align:
         write(f">{s}")
         d10_used = {i: True for i in range(n_window)}

@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-12 17:23:26
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-11-17 15:25:14
+ * @LastEditTime: 2025-02-13 10:48:16
  * @FilePath: /pymummer/pymummer/usage.py
  * @Description:
 """
@@ -46,6 +46,9 @@ def report_indel_redund(d: Delta, stdout=stdout):
 def report_indel_long(
     d: Delta, min_diff=5, skip_aln: set[AlignRegion] | None = None, stdout=stdout
 ):
+    """
+    report indels with at least min_diff to stdout
+    """
     write = lambda *x: print(*x, file=stdout)
     this: Pair.T = "ref"
     other = Pair.switch(this)
@@ -70,6 +73,9 @@ def report_indel_long(
 def report_indel_looong(
     d: Delta, skip_aln: set[DeltaRegion] | None = None, stdout=stdout
 ):
+    """
+    report all indels to stdout
+    """
     write = lambda *x: print(*x, file=stdout)
     this: Pair.T = "ref"
     other = Pair.switch(this)
@@ -223,12 +229,12 @@ def report_mut_feat_cds(
             desc = ""
             mutid = f"{feat.id}-{ar.contig.seqid2[template]}-{ar}"
             ar_cds = AlignContig2(
-                ("template transcript", "mutation"), (refcds, rec)
+                (refcds, rec), ("template transcript", "mutation")
             ).align()
             mut_translate = rec.translate()
             refaa = refcds.translate()
             ar_aa = AlignContig2(
-                ("template protein", "mutation"), (refaa, mut_translate)
+                (refaa, mut_translate), ("template protein", "mutation")
             ).align()
             _feat, new_rec = try_get_cds_end(
                 feat, flatten, d.seqs[this][seqid], {ar}, True
@@ -306,12 +312,12 @@ def report_mut_feat_cds2(
             alnid = f"{ar.contig.seqid2[other]}-{ar}"
             mutid = f"{feat.id}-{alnid}"
             ar_cds = AlignContig2(
-                ("template transcript", "mutation"), (refcds, rec)
+                (refcds, rec), ("template transcript", "mutation")
             ).align()
             mut_translate = rec.translate()
             refaa = refcds.translate()
             ar_aa = AlignContig2(
-                ("template protein", "mutation"), (refaa, mut_translate)
+                (refaa, mut_translate), ("template protein", "mutation")
             ).align()
             _feat, new_rec = try_get_cds_end(
                 feat, flatten, d.seqs[this][seqid], {ar}, True

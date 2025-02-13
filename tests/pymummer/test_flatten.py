@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-15 18:24:56
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-16 21:37:43
+ * @LastEditTime: 2025-02-13 10:49:31
  * @FilePath: /pymummer/tests/pymummer/test_flatten.py
  * @Description:
 """
@@ -28,8 +28,8 @@ def test_doc():
 
 def _make_example():
     ac = alignment.AlignContig2(
-        ("test1", "test2"),
         (SeqRecord(Seq("acgtagctgag")), SeqRecord(Seq("cggtagtgag"))),
+        ("test1", "test2"),
     )
     ar1 = ac.align(1)
     ac.alignregions.append(ar1)

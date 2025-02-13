@@ -43,6 +43,8 @@ class Pair(Generic[FT]):
         self.inst = inst
 
     def __call__(self, inst):
+        if hasattr(self, "_d"):
+            raise NotImplementedError("Cannot call Pair with dict")
         self.inst = inst
         return self
 

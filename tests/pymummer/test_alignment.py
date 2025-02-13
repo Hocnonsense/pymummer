@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-08-18 22:47:31
+ * @LastEditTime: 2025-02-13 10:48:55
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
  * @Description:
 """
@@ -30,8 +30,7 @@ def test_doc():
 
 def _make_example():
     ac = alignment.AlignContig2(
-        ("test1", "test2"),
-        (SeqRecord(Seq("acgtagctgag")), SeqRecord(Seq("cggtagtgag"))),
+        (SeqRecord(Seq("acgtagctgag"), "test1"), SeqRecord(Seq("cggtagtgag"), "test2"))
     )
     ar1 = ac.align(1)
     ac.alignregions.append(ar1)

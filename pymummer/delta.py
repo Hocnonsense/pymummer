@@ -2,7 +2,7 @@
 """
  * @Date: 2024-08-08 20:18:28
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2024-09-25 10:16:50
+ * @LastEditTime: 2025-02-13 10:03:42
  * @FilePath: /pymummer/pymummer/delta.py
  * @Description:
 """
@@ -45,7 +45,7 @@ class Delta:
         )
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}[{self.alignment_type}({self.ref.stem}, {self.query.stem})"
+        return f"{self.__class__.__name__}[{self.alignment_type}({self.ref.stem}, {self.query.stem})]"
 
     def __iter__(self):
         for g in self.pairs:
@@ -91,6 +91,13 @@ class Delta:
             yield lines
 
     def drop_alter(self, aim: Pair.T):
+        """
+        For each alignment region, only keep the best-match alignment region.
+        To move:
+            - higher mismatch rate
+            - shorter alignment
+        regions to self.alignments_sub
+        """
         for g in self.pairs:
             alignments_good: list[DeltaRegion] = []
             alignments_sub: list[DeltaRegion] = []
@@ -145,21 +152,29 @@ class Delta:
     @overload
     @classmethod
     def run_nucmer(
-        cls, ref: Path, query: Path, outprefix: Path, load: Literal[False]
+        cls, ref: Path, query: Path, outprefix: Path, load: Literal[False], force=False
     ) -> Path: ...
 
     @overload
     @classmethod
     def run_nucmer(
-        cls, ref: Path, query: Path, outprefix: Path, load: Literal[True] = True
+        cls,
+        ref: Path,
+        query: Path,
+        outprefix: Path,
+        load: Literal[True] = True,
+        force=False,
     ) -> "Delta": ...
 
     @classmethod
-    def run_nucmer(cls, ref: Path, query: Path, outprefix: Path, load=True):
-        os.system(f"nucmer {ref} {query} -p {outprefix}")
+    def run_nucmer(
+        cls, ref: Path, query: Path, outprefix: Path, load=True, force=False
+    ):
         outfile = Path((f"{outprefix}.delta"))
+        if force or not outfile.exists():
+            os.system(f"nucmer {ref} {query} -p {outprefix}")
         if load:  # pragma: no cover
-            return Delta(outfile)
+            return Delta(outfile, {})
         return outfile
 
 
