@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-15 18:20:33
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-12 17:30:40
-* @FilePath: /pymummer/pymummer/flatten.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-13 11:56:42
+ * @FilePath: /pymummer/pymummer/flatten.py
 * @Description:
 """
 
@@ -153,7 +153,7 @@ def try_get_cds_end(
     assert feat.location is not None
     this_rec = rec[:0]
     for _ar, this_rec in flatten2feat(feat, flatten_align, rec, circular or None, ars):
-        trans: Seq = this_rec.translate().seq
+        trans: Seq = this_rec.translate().seq  # pyright: ignore[reportAssignmentType]
         if "*" in trans[:-1]:
             return feat, this_rec[: (trans.index("*") + 1) * 3]
         if trans.endswith("*"):
@@ -185,13 +185,13 @@ def try_get_cds_end(
         ):
             processed = True
             new_rec_ = this_rec + new_rec
-            trans = new_rec_.translate().seq
+            trans = new_rec_.translate().seq  # pyright: ignore[reportAssignmentType]
             if "*" in trans:
                 return new_feat, new_rec_[: (trans.index("*") + 1) * 3]
         if not processed:
             new_rec = new_feat.extract(rec)
             new_rec_ = this_rec + new_rec
-            trans = new_rec_.translate().seq
+            trans = new_rec_.translate().seq  # pyright: ignore[reportAssignmentType]
             if "*" in trans:
                 return new_feat, new_rec_[: (trans.index("*") + 1) * 3]
         this_rec += new_rec  # pyright: ignore[reportPossiblyUnboundVariable, reportOperatorIssue]

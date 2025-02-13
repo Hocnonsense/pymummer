@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-12 17:23:26
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-13 10:48:16
-* @FilePath: /pymummer/pymummer/usage.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-13 11:50:49
+ * @FilePath: /pymummer/pymummer/usage.py
 * @Description:
 """
 # """
@@ -240,7 +240,7 @@ def report_mut_feat_cds(
                 feat, flatten, d.seqs[this][seqid], {ar}, True
             )
             assert ar_cds.contig is not None and ar_aa.contig is not None
-            assert rec.seq is not None
+            assert rec.seq is not None and mut_translate.seq is not None
             if len(rec.seq) % 3:
                 write("Frame shift detected!")
                 if "*" in mut_translate.seq[:-1]:
@@ -323,7 +323,7 @@ def report_mut_feat_cds2(
                 feat, flatten, d.seqs[this][seqid], {ar}, True
             )
             assert ar_cds.contig is not None and ar_aa.contig is not None
-            assert rec.seq is not None
+            assert rec.seq is not None and mut_translate.seq is not None
             mask_aa_hgvs = False
             if len(rec.seq) % 3:
                 desc = "indel shift"

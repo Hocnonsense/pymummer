@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-15 18:24:56
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-13 10:49:31
-* @FilePath: /pymummer/tests/pymummer/test_flatten.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-13 11:57:49
+ * @FilePath: /pymummer/tests/pymummer/test_flatten.py
 * @Description:
 """
 # """
@@ -69,7 +69,10 @@ def test_flatten():
         ar3
     ].annotations["Support"]
     assert len(sli) == 1
-    assert feat2rec[ar3].seq[slice(*sli[0])] == ar3.seq["query"]
+    assert (
+        feat2rec[ar3].seq[slice(*sli[0])]  # pyright: ignore[reportOptionalSubscript]
+        == ar3.seq["query"]
+    )
 
 
 delta_file = test_files / "MarsFilter2.delta"
