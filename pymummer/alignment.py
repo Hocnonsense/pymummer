@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-13 11:15:33
+ * @LastEditTime: 2025-02-13 11:43:10
  * @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
@@ -38,13 +38,14 @@ class AlignContig2:
         queryid: str | None = None,
     ):
         ref_seq, query_seq = seqs
-        ref_id, query_id = ref_seq.id, query_seq.id
+        ref_id, query_id = str(ref_seq.id), str(query_seq.id)
         if seqids is not None:
             ref_id, query_id = seqids
         if refid is not None:
             ref_id = refid
         if queryid is not None:
             query_id = queryid
+        assert ref_id != query_id
         self.seqid2 = Pair({"ref": ref_id, "query": query_id})
         self.__seq2 = Pair({"ref": ref_seq, "query": query_seq})
         self.alignregions: list[AlignRegion] = []
