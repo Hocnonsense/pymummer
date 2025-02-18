@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-12 14:35:01
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-13 10:59:12
-* @FilePath: /pymummer/tests/pymummer/test_delta.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-18 21:54:31
+ * @FilePath: /pymummer/tests/pymummer/test_delta.py
 * @Description:
 """
 # """
@@ -67,7 +67,7 @@ def test_delta_str():
         print(d, file=buf)
         for i in d:
             print(i.contig, file=buf)
-            print(i, file=buf)
+            print(repr(i), file=buf)
         buf.seek(0)
         assert buf.readlines() == [
             "Delta[NUCMER(MarsFilter2-sub, A501-plasmid)]\n",

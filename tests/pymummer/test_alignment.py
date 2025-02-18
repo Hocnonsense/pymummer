@@ -2,13 +2,12 @@
 """
 * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-18 21:37:36
+ * @LastEditTime: 2025-02-18 21:55:29
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
 * @Description:
 """
 # """
 
-import pytest
 from Bio.Seq import Seq
 from Bio.SeqFeature import SimpleLocation
 
@@ -42,8 +41,13 @@ def test_align_contig2():
         ac.align((SimpleLocation(6, 11, 1), SimpleLocation(4, 10, 1)))
     )
     # , [1, -3, 4], 3, ac
-    assert str(ac) == "AlignContig2(test1[0:11](+), test2[0:10](+))"
-    assert str(ar1) == "AlignRegion([0:11](+)~[0:10](+), 11bp-3)"
+    assert repr(ac) == "AlignContig2(test1[0:11](+), test2[0:10](+))"
+    assert repr(ar1) == "AlignRegion([0:11](+)~[0:10](+), 11bp-3)"
+    assert str(ar1) == (
+        "acg-tagctgag test1[0:11](+)\n"  #
+        "-||+|||-|||| 3\n"
+        "-cggtag-tgag test2[0:10](+)"
+    )
     assert ac.seq2["ref"].seq == ar1.seq["ref"] == "acgtagctgag"
     assert str(ar1.seq_align["ref"]) == "acg-tagctgag"
     assert ar2.alignment is not None

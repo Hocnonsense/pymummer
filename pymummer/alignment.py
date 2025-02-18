@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-18 21:37:15
+ * @LastEditTime: 2025-02-18 21:53:40
  * @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
@@ -251,6 +251,27 @@ class AlignRegion:
             f"({self.loc2['ref']}"
             f"~{self.loc2['query']},"
             f" {self.region_len}bp-{self.n_mismatch})"
+        )
+
+    def __str__(self):
+        return (
+            (
+                "{} {}{}".format(
+                    self.seq_align["ref"],
+                    self.feat2["ref"].id,
+                    self.feat2["ref"].location,
+                )
+            )
+            + "\n"
+            + ("{} {}".format(self.alignment2["ref"], self.n_mismatch))
+            + "\n"
+            + (
+                "{} {}{}".format(
+                    self.seq_align["query"],
+                    self.feat2["query"].id,
+                    self.feat2["query"].location,
+                )
+            )
         )
 
     @property

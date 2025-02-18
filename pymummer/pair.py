@@ -114,7 +114,7 @@ def align_biopair(seq1, seq2, alner=alner_extend_gap):
     ([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -17], 12)
     """
     aln = next(alner.align(seq1, seq2))
-    aln1, aln2 = list(aln)
+    aln1, aln2 = list(aln)  # pyright: ignore[reportArgumentType]
     return aln2delta(aln1, aln2)
 
 
