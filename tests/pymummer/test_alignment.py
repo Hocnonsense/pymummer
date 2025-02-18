@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-13 11:18:37
+ * @LastEditTime: 2025-02-18 21:37:36
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
 * @Description:
 """
@@ -59,10 +59,28 @@ def test_align_contig2():
     ) == str(ar1.seq["query"])
 
 
+def test_sub():
+    ac = alignment.AlignContig2(
+        (
+            SeqRecord(Seq("cggtaacgtagctgagacgtagctgaggtgag"), "test1"),
+            SeqRecord(Seq("cggtaacgtagctgaggtgag"), "test2"),
+        )
+    )
+    ar1 = ac.align()
+    ac.alignregions.append(ar1)
+    assert ar1.alignment == "||||||||||||||||--||-|---||-----"
+    ar2 = ar1.sub(0, 32, "biopair")
+    assert (
+        ac.align(align_method="biopair").alignment
+        == ar2.alignment
+        == "|||||-----------||||||||||||||||"
+    )
+
+
 def test_hgvs():
     if not pair.IMPORT_AVAIL_HGVS:
         return
     ac, ar1 = _make_example()
-    assert ["test1:g.2del", "test1:g.3_4insg", "test1:g.8del"] == [
+    assert ["test1:g.1del", "test1:g.3delinsgg", "test1:g.7del"] == [
         str(i) for i in ar1.hgvs("ref", "g")
     ]

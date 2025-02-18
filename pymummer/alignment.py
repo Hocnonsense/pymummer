@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-13 11:43:10
+ * @LastEditTime: 2025-02-18 21:37:15
  * @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
@@ -71,24 +71,15 @@ class AlignContig2:
 
     @overload
     def align(
-        self,
-        query_strand: Literal[1, -1] = 1,
-        /,
-        align_method: Literal["edlib"] = "edlib",
+        self, query_strand: Literal[1, -1] = 1, /, align_method="edlib"
     ) -> "AlignRegion": ...
     @overload
     def align(
-        self,
-        strand: tuple[Literal[1, -1], Literal[1, -1]],
-        /,
-        align_method: Literal["edlib"] = "edlib",
+        self, strand: tuple[Literal[1, -1], Literal[1, -1]], /, align_method="edlib"
     ) -> "AlignRegion": ...
     @overload
     def align(
-        self,
-        loc2: tuple[SimpleLocation, SimpleLocation],
-        /,
-        align_method: Literal["edlib"] = "edlib",
+        self, loc2: tuple[SimpleLocation, SimpleLocation], /, align_method="edlib"
     ) -> "AlignRegion": ...
     def align(
         self,
@@ -121,12 +112,18 @@ class AlignContig2:
             ref_seq = loc_ref.extract(self.seq2["ref"].seq)
             query_seq = loc_query.extract(self.seq2["query"].seq)
             alnm, mism = align_edlib(ref_seq, query_seq)
+        elif align_method == "biopair":
+            ref_seq = loc_ref.extract(self.seq2["ref"].seq)
+            query_seq = loc_query.extract(self.seq2["query"].seq)
+            alnm, mism = pair.align_biopair(ref_seq, query_seq)
         else:
             raise NotImplementedError(
                 f"not implied {align_method = }"
             )  # pragma: no cover
         # return AlignRegion
-        return self.region_class((loc_ref, loc_query), alnm, mism, self)
+        ar = self.region_class((loc_ref, loc_query), alnm, mism, self)
+        # self.alignregions = [ar]
+        return ar
 
     @classmethod
     def _get_region_class(cls):
@@ -371,12 +368,66 @@ class AlignRegion:
     @property
     @Pair
     def diff2(self, this: "Pair.T", other: "Pair.T"):
+        """
+        self.pair2diff(ref, query)
+
+        iter the matched element along each base of reference
+        - `|`: match
+        - `+`: label of insertion
+        - `-`: label of deletion
+        - ATCG, etc: mismatch
+        """
         ref, query = self.seq_align[this], self.seq_align[other]
+        if self.loc2[this].strand == -1:  # pragma: no cover
+            # reverse back
+            ref = ref.reverse_complement()
+            query = query.reverse_complement()
         return self.pair2diff(ref, query)
 
     @property
     def diff(self):
         return self.diff2["ref"]
+
+    def sub(
+        self,
+        start: int,
+        end: int,
+        align_method: str | None = "biopair",
+        this: "Pair.T" = "ref",
+    ):
+        if self.loc2[this].strand == 1:
+            loc_this = SimpleLocation(start, +end, 1) + self.loc2[this].start
+        else:
+            loc_this = SimpleLocation(-end, -start, -1) + self.loc2[this].end
+        other = Pair.switch(this)
+        ref = self.seq[this][start:end]
+        print(ref)
+        _diff = list(self.diff2[this])[:end]
+        print(_diff)
+        _start = sum(len(i.replace("+", "").replace("-", "")) for i in _diff[:start])
+        _len = sum(len(i.replace("+", "").replace("-", "")) for i in _diff[start:end])
+        if self.loc2[other].strand == 1:
+            loc_other = (
+                SimpleLocation(_start, _start + _len, 1) + self.loc2[other].start
+            )
+        else:
+            loc_other = (
+                SimpleLocation(-_start - _len, -_start, -1) + self.loc2[other].end
+            )
+        assert self.contig is not None
+        query = loc_other.extract(self.contig.seq2[other].seq)
+        if align_method == "biopair":
+            muts, ndiff = pair.align_biopair(ref, query)
+        elif align_method == "edlib":
+            muts, ndiff = pair.align_edlib(ref, query)
+        elif align_method is None:
+            muts, ndiff = pair.diff2delta(_diff[start:end])
+        else:
+            raise NotImplementedError(f"not implied {align_method = }")
+        new_aln = (self.contig.region_class if self.contig else AlignRegion)(
+            (loc_this, loc_other), muts, ndiff, self.contig
+        )
+        return new_aln
 
     @classmethod
     def diff2vcf(cls, ref, query):
@@ -387,37 +438,48 @@ class AlignRegion:
         >>> # ||+|
         >>> # ABCD
         >>> list(AlignRegion.diff2vcf("AB-D", "ABCD"))
-        [(2, '', 'C')]
+        [(2, 'B', 'BC')]
+        >>> list(AlignRegion.diff2vcf("AB-", "ABC"))
+        [(2, 'B', 'BC')]
         >>> # AB-DFGH
         >>> # ||+|E|-
         >>> # ABCDEG-
         >>> list(AlignRegion.diff2vcf("AB-DFGH", "ABCDEG-"))
-        [(2, '', 'C'), (4, 'F', 'E'), (6, 'H', '')]
-        >>> list(AlignRegion.diff2vcf("AB-", "ABC"))
-        [(2, '', 'C')]
+        [(2, 'B', 'BC'), (4, 'F', 'E'), (6, 'H', '')]
+        >>> list(AlignRegion.diff2vcf("AB-FDGH", "ABCEDG-"))
+        [(3, 'F', 'CE'), (6, 'H', '')]
         """
         ref, query = str(ref), str(query)
         assert len(ref.replace("-", "")) > 0, f"empty {ref = }"
         align = cls.pair2align(ref, query)
+        last_ref = ref[0]
         _ref = _alt = ""
         index, _i = 0, -1
         for base_ref, base_align, base_query in zip(ref, align, query):
             if base_ref != "-":
                 index += 1
             if base_align == "|":
-                if _ref or _alt:
+                if _ref:
                     yield _i, _ref, _alt
                     _ref = _alt = ""
                     _i = -1
+                elif _alt:
+                    yield _i - 1, last_ref + _ref, last_ref + _alt
+                    _ref = _alt = ""
+                    _i = -1
+                last_ref = base_ref
             else:
                 if _i == -1:
-                    _i = index
+                    _i = index + (base_ref == "-")
+                    # special case for deletion
                 if base_ref != "-":
                     _ref += base_ref
                 if base_query != "-":
                     _alt += base_query
-        if _ref or _alt:
+        if _ref:
             yield _i, _ref, _alt
+        elif _alt:
+            yield _i - 1, last_ref + _ref, last_ref + _alt
 
     def hgvs(self, this: "Pair.T", seqtype="g", seqid: str | None = None):
         assert pair.IMPORT_AVAIL_HGVS
@@ -427,7 +489,7 @@ class AlignRegion:
         other = Pair.switch(this)
         ref, query = self.seq_align[this], self.seq_align[other]
         return [
-            pair.hgvs_from_mut(s, r, l, seqid, seqtype=seqtype)
+            pair.hgvs_from_mut(s - 1, r, l, seqid, seqtype=seqtype)
             for s, r, l in self.diff2vcf(ref, query)
         ]
 
@@ -516,7 +578,7 @@ class AlignRegion:
             seq = seq[:start] + label + seq[end:]
         return seq
 
-    def merge(self, other: "AlignRegion", align_method: Literal["edlib"] = "edlib"):
+    def merge(self, other: "AlignRegion", align_method="edlib"):
         assert (
             self.contig == other.contig
         ), f"Not of the same group, this: {self.contig}, other: {other.contig}"

@@ -1,5 +1,14 @@
-from typing import Callable, Generic, Literal, Sequence, TypeVar, Final, overload
-
+from typing import (
+    Callable,
+    Generic,
+    Iterable,
+    Literal,
+    Sequence,
+    TypeVar,
+    Final,
+    overload,
+)
+from Bio.Align import PairwiseAligner
 
 FT = TypeVar("FT")
 CLS = TypeVar("CLS")
@@ -83,6 +92,121 @@ class Pair(Generic[FT]):
             yield i, self[i]
 
 
+alner_extend_gap = PairwiseAligner(
+    match_score=1,
+    mismatch_score=-1,
+    open_gap_score=-1,
+    extend_gap_score=-0.1,
+    mode="global",
+)
+
+
+def align_biopair(seq1, seq2, alner=alner_extend_gap):
+    """
+    compare two sequences using biopython
+    return similar format that MUMmer likes:
+    >>> a = "acgtagctgagacgtagctgaggtgagk"
+    >>> b = "acgtagctgaggtgagck"
+
+    >>> align_biopair("acgtagctgag", "cggtagtgag")
+    ([1, -2, 5], 3)
+    >>> align_biopair("acgtagctgagacgtagctgaggtgagk", "acgtagctgaggtgagck")
+    ([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -17], 12)
+    """
+    aln = next(alner.align(seq1, seq2))
+    aln1, aln2 = list(aln)
+    return aln2delta(aln1, aln2)
+
+
+def aln2delta(aln1, aln2):
+    muts: list[int] = []
+    ndiff = 0
+    match_base = 0
+    for a, b in zip(aln1, aln2):
+        match_base += 1
+        if a != b:
+            ndiff += 1
+            if a == "-":
+                muts.append(-match_base)
+            elif b == "-":
+                muts.append(match_base)
+            else:
+                continue
+            match_base = 0
+    return muts, ndiff
+
+
+def diff2delta(diff: Iterable[str]):
+    """
+    > A = acg.tagctgag$
+    > B = .cggtag.tgag$
+    >>> diff2delta(["-", "|", "|", "g+|", "|", "|", "-", "|", "|", "|", "|"])
+    ([1, -3, 4], 3)
+    >>> diff2delta(["|", "|+C", ])
+    ([-3], 1)
+    """
+    muts: list[int] = []
+    ndiff = 0
+    match_base = 0
+    for c in diff:
+        if c == "-":
+            muts.append(match_base + 1)
+            match_base = 0
+            ndiff += 1
+        elif c == "|":
+            match_base += 1
+        elif len(c) == 1:
+            match_base += 1
+            ndiff += 1
+        elif "+" in c:
+            if c.startswith("|+"):
+                muts.append(-match_base - 2)
+            elif c.endswith("+|"):
+                muts.append(-match_base - 1)
+                match_base = 1
+            else:
+                raise ValueError(f"Invalid diff: {c}")
+            ndiff += 1
+            for i in range(len(c) - 3):
+                muts.append(-1)
+                ndiff += 1
+    return muts, ndiff
+
+
+def cigar2delta(cigar: str):
+    muts: list[int] = []
+    ndiff = 0
+    match_base = 0
+    last_str = cigar[0]
+    for c in cigar[1:]:
+        if c == "=":
+            # equal for equal or mismatch
+            match_base += int(last_str)
+        elif c == "X":
+            match_base += int(last_str)
+            ndiff += int(last_str)
+        elif c == "I":
+            # positive to insert to seq2
+            muts.append(match_base + 1)
+            for i in range(int(last_str) - 1):
+                muts.append(1)
+                ndiff += 1
+            match_base = 0
+        elif c == "D":
+            # negative to insert to seq1
+            muts.append(-match_base - 1)
+            for i in range(int(last_str) - 1):
+                muts.append(-1)
+                ndiff += 1
+            match_base = 0
+        else:
+            # recort number
+            last_str += c
+            continue
+        last_str = ""
+    return muts, ndiff
+
+
 try:
     import edlib
 
@@ -106,33 +230,7 @@ try:
         ealign = edlib.align(seq1, seq2, mode="NW", task="path")
         # print(ealign)
         ndiff = int(ealign["editDistance"])
-        cigar: str = ealign["cigar"]
-        muts: list[int] = []
-        match_base = 0
-        last_str = cigar[0]
-        for c in cigar[1:]:
-            if c == "=":
-                # equal for equal or mismatch
-                match_base += int(last_str)
-            elif c == "X":
-                match_base += int(last_str)
-            elif c == "I":
-                # positive to insert to seq2
-                muts.append(match_base + 1)
-                for i in range(int(last_str) - 1):
-                    muts.append(1)
-                match_base = 0
-            elif c == "D":
-                # negative to insert to seq1
-                muts.append(-match_base - 1)
-                for i in range(int(last_str) - 1):
-                    muts.append(-1)
-                match_base = 0
-            else:
-                # recort number
-                last_str += c
-                continue
-            last_str = ""
+        muts = cigar2delta(ealign["cigar"])[0]
         return muts, ndiff
 
     IMPORT_AVAIL_EDLIB = True
