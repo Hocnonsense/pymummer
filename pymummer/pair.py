@@ -52,7 +52,7 @@ class Pair(Generic[FT]):
         self.inst = inst
 
     def __call__(self, inst):
-        if hasattr(self, "_d"):
+        if hasattr(self, "_d"):  # pragma: no cover
             raise NotImplementedError("Cannot call Pair with dict")
         self.inst = inst
         return self
@@ -112,6 +112,8 @@ def align_biopair(seq1, seq2, alner=alner_extend_gap):
     ([1, -2, 5], 3)
     >>> align_biopair("acgtagctgagacgtagctgaggtgagk", "acgtagctgaggtgagck")
     ([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, -17], 12)
+    >>> align_biopair("acgtagctgag", "acgtagatgag")
+    ([], 1)
     """
     aln = next(alner.align(seq1, seq2))
     aln1, aln2 = list(aln)  # pyright: ignore[reportArgumentType]
@@ -142,8 +144,17 @@ def diff2delta(diff: Iterable[str]):
     > B = .cggtag.tgag$
     >>> diff2delta(["-", "|", "|", "g+|", "|", "|", "-", "|", "|", "|", "|"])
     ([1, -3, 4], 3)
-    >>> diff2delta(["|", "|+C", ])
-    ([-3], 1)
+    >>> diff2delta(["|", "A", "|+C"])
+    ([-4], 2)
+    >>> diff2delta(["|", "ab+|", "|+cd"])
+    ([-2, -1, -3, -1], 4)
+    >>> diff2delta(["|", "ab+c", "|"])
+    ([-2, -1], 3)
+    >>> # ATA-TTG---GGTTTG--
+    >>> # |||+A||+++--||--++
+    >>> # ATAGATGAAT--TT--AC
+    >>> diff2delta(['|', '|', '|', 'G+A', '|', '|', 'AAT+-', '-', '|', '|', '-', '-+AC'])
+    ([-4, -4, -1, -1, 1, 1, 3, 1, -1, -1], 11)
     """
     muts: list[int] = []
     ndiff = 0
@@ -159,17 +170,41 @@ def diff2delta(diff: Iterable[str]):
             match_base += 1
             ndiff += 1
         elif "+" in c:
+            ndiff += len(c) - 1 - ("|" in c)
             if c.startswith("|+"):
                 muts.append(-match_base - 2)
-            elif c.endswith("+|"):
-                muts.append(-match_base - 1)
-                match_base = 1
-            else:
+                for i in range(len(c) - 3):
+                    muts.append(-1)
+            elif c.startswith("-+"):
+                # A--
+                # -BC -> -+BC -> (1', -1, -1)
+                muts.append(match_base + 1)
+                for i in range(len(c) - 2):
+                    muts.append(-1)
+            elif not c[-2] == "+":  # pragma: no cover
                 raise ValueError(f"Invalid diff: {c}")
-            ndiff += 1
-            for i in range(len(c) - 3):
-                muts.append(-1)
-                ndiff += 1
+            elif c.endswith("+|"):
+                # --C
+                # ABC -> AB+| -> (-1', -1)
+                muts.append(-match_base - 1)
+                for i in range(len(c) - 3):
+                    muts.append(-1)
+            elif c.endswith("+-"):
+                # --C
+                # AB- -> AB+- -> (-1', -1, 1)
+                muts.append(-match_base - 1)
+                for i in range(len(c) - 3):
+                    muts.append(-1)
+                muts.append(1)
+            else:
+                # --C
+                # ABD -> AB+D -> (-1', -1)
+                muts.append(-match_base - 1)
+                for i in range(len(c) - 3):
+                    muts.append(-1)
+            match_base = "-" not in c
+        else:  # pragma: no cover
+            raise ValueError(f"Invalid diff: {c}")
     return muts, ndiff
 
 

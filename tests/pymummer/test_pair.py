@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 16:13:55
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-13 11:16:26
+ * @LastEditTime: 2025-02-19 14:20:33
  * @FilePath: /pymummer/tests/pymummer/test_pair.py
 * @Description:
 """
@@ -64,3 +64,5 @@ def test_hgvs_from_mut():
     assert str(h) == "genexx.1:g.2A>T"
     h = pair.hgvs_from_mut(63, "YI", "S", "protxx.1", "p")
     assert str(h) == "protxx.1:p.64_65delinsS"
+    h = pair.hgvs_from_mut(63, "", "S", "protxx.1", "p")
+    assert str(h) == "protxx.1:p.63_64insS"

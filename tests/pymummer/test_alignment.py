@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 21:02:48
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-18 21:55:29
+ * @LastEditTime: 2025-02-19 14:42:33
  * @FilePath: /pymummer/tests/pymummer/test_alignment.py
 * @Description:
 """
@@ -72,17 +72,27 @@ def test_sub():
     )
     ar1 = ac.align()
     ac.alignregions.append(ar1)
-    assert ar1.alignment == "||||||||||||||||--||-|---||-----"
-    ar2 = ar1.sub(0, 32, "biopair")
+    assert (
+        ar1.alignment
+        == ar1.sub(-33, -1, "edlib").alignment
+        == "||||||||||||||||--||-|---||-----"
+    )
+    assert ar1.sub(15, -1, None).alignment == "|--||-|---||-----"
+    ar2 = ar1.sub(0, -1, "biopair")
     assert (
         ac.align(align_method="biopair").alignment
         == ar2.alignment
         == "|||||-----------||||||||||||||||"
     )
+    assert [str(i) for i in ar2.str_mask()] == [
+        "cggtaacgtagctgagacgta[ masked ]",
+        "|||||-----------|||||    11    ",
+        "cggta-----------acgta[bp same ]",
+    ]
 
 
 def test_hgvs():
-    if not pair.IMPORT_AVAIL_HGVS:
+    if not pair.IMPORT_AVAIL_HGVS:  # pragma: no cover
         return
     ac, ar1 = _make_example()
     assert ["test1:g.1del", "test1:g.3delinsgg", "test1:g.7del"] == [

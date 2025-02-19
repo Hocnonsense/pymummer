@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-18 21:53:40
+ * @LastEditTime: 2025-02-19 14:39:51
  * @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
@@ -254,22 +254,20 @@ class AlignRegion:
         )
 
     def __str__(self):
+        if len(self.loc2["ref"]) > 500:
+            ref, aln, query = self.str_mask()
+        else:
+            ref = self.seq_align["ref"]
+            aln = self.alignment2["ref"]
+            query = self.seq_align["query"]
         return (
-            (
-                "{} {}{}".format(
-                    self.seq_align["ref"],
-                    self.feat2["ref"].id,
-                    self.feat2["ref"].location,
-                )
-            )
+            ("{} {}{}".format(ref, self.feat2["ref"].id, self.feat2["ref"].location))
             + "\n"
-            + ("{} {}".format(self.alignment2["ref"], self.n_mismatch))
+            + ("{} {}".format(aln, self.n_mismatch))
             + "\n"
             + (
                 "{} {}{}".format(
-                    self.seq_align["query"],
-                    self.feat2["query"].id,
-                    self.feat2["query"].location,
+                    query, self.feat2["query"].id, self.feat2["query"].location
                 )
             )
         )
@@ -358,6 +356,11 @@ class AlignRegion:
         [('A', '|'), ('B', '|'), ('D', 'C+|'), ('F', 'E'), ('G', '|'), ('H', '-')]
         >>> list(AlignRegion.pair2diff("AB-", "ABC"))
         ['|', '|+C']
+        >>> # ATA-TTG---GGTTTG--
+        >>> # |||+A||+++--||--++
+        >>> # ATAGATGAAT--TT--AC
+        >>> list(AlignRegion.pair2diff("ATA-TTG---GGTTTG--", "ATAGATGAAT--TT--AC"))
+        ['|', '|', '|', 'G+A', '|', '|', 'AAT+-', '-', '|', '|', '-', '-+AC']
         """
         ref, query = str(ref), str(query)
         assert len(ref.replace("-", "")) > 0, f"empty {ref = }"
@@ -372,7 +375,6 @@ class AlignRegion:
             return
         align = cls.pair2align(ref, query)
         ins = ""
-        # print(ref, align, query, sep="\n")
         for base_ref, base_align, base_query in zip(ref, align, query):
             if base_ref == "-":
                 ins += base_query
@@ -416,15 +418,17 @@ class AlignRegion:
         align_method: str | None = "biopair",
         this: "Pair.T" = "ref",
     ):
+        if start < 0:
+            start = len(self.seq[this]) + start + 1
+        if end < 0:
+            end = len(self.seq[this]) + end + 1
         if self.loc2[this].strand == 1:
             loc_this = SimpleLocation(start, +end, 1) + self.loc2[this].start
-        else:
+        else:  # pragma: no cover
             loc_this = SimpleLocation(-end, -start, -1) + self.loc2[this].end
         other = Pair.switch(this)
         ref = self.seq[this][start:end]
-        print(ref)
         _diff = list(self.diff2[this])[:end]
-        print(_diff)
         _start = sum(len(i.replace("+", "").replace("-", "")) for i in _diff[:start])
         _len = sum(len(i.replace("+", "").replace("-", "")) for i in _diff[start:end])
         if self.loc2[other].strand == 1:
@@ -443,7 +447,7 @@ class AlignRegion:
             muts, ndiff = pair.align_edlib(ref, query)
         elif align_method is None:
             muts, ndiff = pair.diff2delta(_diff[start:end])
-        else:
+        else:  # pragma: no cover
             raise NotImplementedError(f"not implied {align_method = }")
         new_aln = (self.contig.region_class if self.contig else AlignRegion)(
             (loc_this, loc_other), muts, ndiff, self.contig
@@ -598,6 +602,14 @@ class AlignRegion:
                     )
             seq = seq[:start] + label + seq[end:]
         return seq
+
+    def str_mask(self, n_wing=5, min_mask=10):
+        alignment = self.alignment
+        muts = self.mask_muts(alignment, n_wing, min_mask)
+        ref = self.render_mask(muts, self.seq_align["ref"], 0)
+        aln = self.render_mask(muts, alignment, 1)
+        query = self.render_mask(muts, self.seq_align["query"], 2)
+        return ref, aln, query
 
     def merge(self, other: "AlignRegion", align_method="edlib"):
         assert (
