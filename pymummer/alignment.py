@@ -2,7 +2,7 @@
 """
 * @Date: 2024-08-11 17:37:59
  * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-19 14:39:51
+ * @LastEditTime: 2025-02-19 18:00:02
  * @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
@@ -559,7 +559,7 @@ class AlignRegion:
     def render_mask(
         cls,
         muts: list[tuple[int, int]],
-        seq: str,
+        seq,  # Sequence | str | Seq
         label_index=1,
         f_labels: list[str] | tuple[str, str, str] = (
             "[ masked ]",

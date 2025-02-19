@@ -197,8 +197,8 @@ def diff2delta(diff: Iterable[str]):
                     muts.append(-1)
                 muts.append(1)
             else:
-                # --C
-                # ABD -> AB+D -> (-1', -1)
+                # --D
+                # ABC -> AB+C -> (-1', -1)
                 muts.append(-match_base - 1)
                 for i in range(len(c) - 3):
                     muts.append(-1)

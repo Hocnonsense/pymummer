@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2022-10-13 09:49:04
-* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2024-08-12 13:12:52
-* @FilePath: /pymummer/tests/setup.py
+ * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+ * @LastEditTime: 2025-02-19 17:53:19
+ * @FilePath: /pymummer/tests/setup.py
 * @Description:
 """
 
@@ -40,7 +40,10 @@ def get_version(file: str | Path):
 
 
 if __name__ == "__main__":
-    from setuptools import setup, find_packages
+    from setuptools import (  # pyright: ignore[reportMissingModuleSource]
+        setup,
+        find_packages,
+    )
 
     package_name = "pymummer"
     package_description = "handle mummer delta file"
