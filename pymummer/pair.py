@@ -243,7 +243,7 @@ def cigar2delta(cigar: str):
 
 
 try:
-    import edlib
+    import edlib  # type: ignore
 
     def align_edlib(seq1, seq2):
         """
@@ -274,7 +274,7 @@ except ImportError:  # pragma: no cover
 
 
 try:
-    from hgvs import sequencevariant, posedit, location, edit
+    from hgvs import sequencevariant, posedit, location, edit  # type: ignore
 
     DOC_DEFINE_HGVS = """Creates a genomic SequenceVariant from a VCF record and the specified alt
 

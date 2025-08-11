@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 * @Date: 2024-08-11 17:37:59
- * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
- * @LastEditTime: 2025-02-19 18:00:02
- * @FilePath: /pymummer/pymummer/alignment.py
+* @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
+* @LastEditTime: 2025-08-04 11:39:57
+* @FilePath: /pymummer/pymummer/alignment.py
 * @Description:
 """
 # """
 
 import os
-from typing import Iterable, Literal, Sequence, overload
 from sys import stdout
+from typing import Iterable, Literal, Sequence, overload
 
 from Bio.Seq import Seq
 from Bio.SeqFeature import SeqFeature, SimpleLocation
 from Bio.SeqRecord import SeqRecord
 
-from .pair import Pair, align_edlib
-from pymummer import pair
+from . import pair
+from .pair import Pair
 
 
 class AlignContig2:
@@ -111,7 +111,7 @@ class AlignContig2:
         if align_method == "edlib":
             ref_seq = loc_ref.extract(self.seq2["ref"].seq)
             query_seq = loc_query.extract(self.seq2["query"].seq)
-            alnm, mism = align_edlib(ref_seq, query_seq)
+            alnm, mism = pair.align_edlib(ref_seq, query_seq)
         elif align_method == "biopair":
             ref_seq = loc_ref.extract(self.seq2["ref"].seq)
             query_seq = loc_query.extract(self.seq2["query"].seq)
@@ -513,6 +513,7 @@ class AlignRegion:
             seqid = self.contig.seqid2[this]
         other = Pair.switch(this)
         ref, query = self.seq_align[this], self.seq_align[other]
+        # FIXME: relative to real start
         return [
             pair.hgvs_from_mut(s - 1, r, l, seqid, seqtype=seqtype)
             for s, r, l in self.diff2vcf(ref, query)

@@ -2,22 +2,25 @@
 """
 * @Date: 2024-08-08 20:18:28
 * @LastEditors: hwrn hwrn.aou@sjtu.edu.cn
-* @LastEditTime: 2025-02-13 10:03:42
+* @LastEditTime: 2025-08-11 19:58:03
 * @FilePath: /pymummer/pymummer/delta.py
 * @Description:
 """
 # """
 
 
-import os
 from pathlib import Path
-from sys import stdout
 from typing import Literal, Sequence, TextIO, overload
 
 from Bio import SeqFeature, SeqIO
 
-from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation
+try:
+    from snakemake import shell  # type: ignore[reportMissingImports]
+except ImportError:
+    from os import system as shell
+
 from . import flatten
+from .alignment import AlignContig2, AlignRegion, SeqRecord, SimpleLocation
 from .pair import Pair
 
 
@@ -26,8 +29,8 @@ class Delta:
     https://github.com/mummer4/mummer/blob/master/docs/nucmer.README
     """
 
-    def __init__(self, delta_file: Path, cache_fa: dict | None = None):
-        self.file = delta_file
+    def __init__(self, delta_file: Path | str, cache_fa: dict | None = None):
+        self.file = Path(delta_file)
         with open(delta_file) as fi:
             (self.ref, self.query), self.alignment_type = self._read_file(fi)
             self.pairs = [
@@ -172,10 +175,75 @@ class Delta:
     ):
         outfile = Path((f"{outprefix}.delta"))
         if force or not outfile.exists():
-            os.system(f"nucmer {ref} {query} -p {outprefix}")
+            shell(f"nucmer {ref} {query} -p {outprefix}")
         if load:  # pragma: no cover
             return Delta(outfile, {})
         return outfile
+
+    def run_filter(
+        self,
+        *args: Literal[1, "1", "g", "m", "q", "r"],
+        i: float | None = None,
+        l: int | None = None,
+        u: float | None = None,
+        o: float | None = None,
+        suffix="-filter_{}",
+        force=False,
+    ):
+        """USAGE: delta-filter  [options]  <deltafile>
+
+        -1            1-to-1 alignment allowing for rearrangements
+                      (intersection of -r and -q alignments)
+        -g            1-to-1 global alignment not allowing rearrangements
+        -h            Display help information
+        -i float      Set the minimum alignment identity [0, 100], default 0
+        -l int        Set the minimum alignment length, default 0
+        -m            Many-to-many alignment allowing for rearrangements
+                      (union of -r and -q alignments)
+        -q            Maps each position of each query to its best hit in
+                      the reference, allowing for reference overlaps
+        -r            Maps each position of each reference to its best hit
+                      in the query, allowing for query overlaps
+        -u float      Set the minimum alignment uniqueness, i.e. percent of
+                      the alignment matching to unique reference AND query
+                      sequence [0, 100], default 0
+        -o float      Set the maximum alignment overlap for -r and -q options
+                      as a percent of the alignment length [0, 100], default 100
+
+          Reads a delta alignment file from either nucmer or promer and
+        filters the alignments based on the command-line switches, leaving
+        only the desired alignments which are output to stdout in the same
+        delta format as the input. For multiple switches, order of operations
+        is as follows: -i -l -u -q -r -g -m -1. If an alignment is excluded
+        by a preceding operation, it will be ignored by the succeeding
+        operations.
+          An important distinction between the -g option and the -1 and -m
+        options is that -g requires the alignments to be mutually consistent
+        in their order, while the -1 and -m options are not required to be
+        mutually consistent and therefore tolerate translocations,
+        inversions, etc. In general cases, the -m option is the best choice,
+        however -1 can be handy for applications such as SNP finding which
+        require a 1-to-1 mapping. Finally, for mapping query contigs, or
+        sequencing reads, to a reference genome, use -q.
+        """
+        fmt_args = []
+        for k in ("1", "g", "m", "q", "r"):
+            if k in args:
+                fmt_args.append(f"-{k}")
+        if 1 in args and "1" not in fmt_args:
+            fmt_args.insert(0, "-1")
+        for k, v in zip(("i", "l", "u", "o"), (i, l, u, o)):
+            if v is not None:
+                fmt_args.append(f"-{k} {v}")
+        fmt_args_str = " ".join(fmt_args)
+        if "{}" in suffix:
+            suffix = suffix.format(fmt_args_str.replace("-", "").replace(" ", ""))
+        outfile = self.file.parent / f"{self.file.stem}{suffix}.delta"
+        if force or not outfile.exists():
+            shell(f"delta-filter {fmt_args_str} {self.file} > {outfile}")
+        d = self.__class__(outfile, None)
+        d.seqs = self.seqs
+        return d
 
 
 class DeltaContig2(AlignContig2):
